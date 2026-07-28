@@ -1371,6 +1371,16 @@ for _, meta in ipairs(frameMetas) do
         if not meta.SetIgnoreParentAlpha then
             meta.SetIgnoreParentAlpha = function(self, ignore) end
         end
+        if not meta.SetMouseClickEnabled then
+            meta.SetMouseClickEnabled = function(self, enabled)
+                if self.EnableMouse then self:EnableMouse(enabled) end
+            end
+        end
+        if not meta.SetMouseMotionEnabled then
+            meta.SetMouseMotionEnabled = function(self, enabled)
+                if self.EnableMouse then self:EnableMouse(enabled) end
+            end
+        end
         if not meta.SetAlphaFromBoolean then
             meta.SetAlphaFromBoolean = function(self, value, trueAlpha, falseAlpha)
                 if trueAlpha == nil then trueAlpha = 1 end
