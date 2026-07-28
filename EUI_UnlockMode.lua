@@ -292,14 +292,16 @@ do
             if EllesmereUI._applySavedPositions then return end
             -- CDM is not loaded. Load the full deferred block and fire
             -- the same authoritative pass CDM would have.
-            EllesmereUI:EnsureLoaded()
-            if EllesmereUI.ApplyAllWidthHeightMatches then
+            if EllesmereUI and EllesmereUI.EnsureLoaded then
+                EllesmereUI:EnsureLoaded()
+            end
+            if EllesmereUI and EllesmereUI.ApplyAllWidthHeightMatches then
                 EllesmereUI.ApplyAllWidthHeightMatches()
             end
-            if EllesmereUI._applySavedPositions then
+            if EllesmereUI and EllesmereUI._applySavedPositions then
                 EllesmereUI._applySavedPositions()
             end
-            if EllesmereUI.ReapplyAllUnlockAnchorsForced then
+            if EllesmereUI and EllesmereUI.ReapplyAllUnlockAnchorsForced then
                 EllesmereUI.ReapplyAllUnlockAnchorsForced()
             end
         end)
@@ -329,8 +331,10 @@ do
     f:RegisterEvent("PLAYER_LOGIN")
     f:SetScript("OnEvent", function(self)
         self:UnregisterAllEvents()
-        EllesmereUI:EnsureLoaded()
-        if EllesmereUI._applySavedPositions then
+        if EllesmereUI and EllesmereUI.EnsureLoaded then
+            EllesmereUI:EnsureLoaded()
+        end
+        if EllesmereUI and EllesmereUI._applySavedPositions then
             EllesmereUI._applySavedPositions()
         end
     end)
