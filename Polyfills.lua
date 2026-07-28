@@ -1368,6 +1368,9 @@ for _, meta in ipairs(frameMetas) do
         if not meta.SetMaxLines then
             meta.SetMaxLines = function(self, limit) end
         end
+        if not meta.SetIgnoreParentAlpha then
+            meta.SetIgnoreParentAlpha = function(self, ignore) end
+        end
         if not meta.SetAlphaFromBoolean then
             meta.SetAlphaFromBoolean = function(self, value, trueAlpha, falseAlpha)
                 if trueAlpha == nil then trueAlpha = 1 end
