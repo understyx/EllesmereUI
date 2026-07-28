@@ -1368,6 +1368,19 @@ for _, meta in ipairs(frameMetas) do
         if not meta.SetMaxLines then
             meta.SetMaxLines = function(self, limit) end
         end
+        if not meta.SetIgnoreParentAlpha then
+            meta.SetIgnoreParentAlpha = function(self, ignore) end
+        end
+        if not meta.SetMouseClickEnabled then
+            meta.SetMouseClickEnabled = function(self, enabled)
+                if self.EnableMouse then self:EnableMouse(enabled) end
+            end
+        end
+        if not meta.SetMouseMotionEnabled then
+            meta.SetMouseMotionEnabled = function(self, enabled)
+                if self.EnableMouse then self:EnableMouse(enabled) end
+            end
+        end
         if not meta.SetAlphaFromBoolean then
             meta.SetAlphaFromBoolean = function(self, value, trueAlpha, falseAlpha)
                 if trueAlpha == nil then trueAlpha = 1 end
@@ -1376,6 +1389,34 @@ for _, meta in ipairs(frameMetas) do
                     self:SetAlpha(trueAlpha)
                 else
                     self:SetAlpha(falseAlpha)
+                end
+            end
+        end
+    end
+end
+
+local okAnim, animFrame = pcall(CreateFrame, "Frame")
+if okAnim and animFrame and animFrame.CreateAnimationGroup then
+    local okGrp, animGroup = pcall(animFrame.CreateAnimationGroup, animFrame)
+    if okGrp and animGroup and animGroup.CreateAnimation then
+        local okAlpha, alphaAnim = pcall(animGroup.CreateAnimation, animGroup, "Alpha")
+        if okAlpha and alphaAnim then
+            local animMeta = getmetatable(alphaAnim)
+            if animMeta and animMeta.__index then
+                local meta = animMeta.__index
+                if not meta.SetFromAlpha then
+                    meta.SetFromAlpha = function(self, alpha)
+                        self._fromAlpha = alpha
+                    end
+                end
+                if not meta.SetToAlpha then
+                    meta.SetToAlpha = function(self, alpha)
+                        self._toAlpha = alpha
+                        if self.SetChange then
+                            local from = self._fromAlpha or 0
+                            self:SetChange(alpha - from)
+                        end
+                    end
                 end
             end
         end
