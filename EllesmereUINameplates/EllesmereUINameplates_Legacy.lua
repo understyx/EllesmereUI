@@ -141,13 +141,14 @@ end
 local function ApplyReactionColor(state, r, g, b)
     if state.applyingColor then return end
     local db, color = DB()
-    state.isFriendly = (r < .3 and g > .7 and b < .35)
-        or (r < .35 and g < .55 and b > .7)
+    state.isFriendly = (r < .1 and g > .9 and b < .1)
+        or (r < .1 and g < .1 and b > .9)
     if r > .85 and g < .25 and b < .25 then
         color = db.hostile or ns.defaults.hostile
     elseif r > .75 and g > .65 and b < .35 then
         color = db.neutral or ns.defaults.neutral
-    elseif abs(r - g) < .08 and abs(g - b) < .08 then
+    elseif r < .7 and g < .7 and b < .7
+        and abs(r - g) < .08 and abs(g - b) < .08 then
         color = db.tapped or ns.defaults.tapped
     end
     if color then r, g, b = color.r, color.g, color.b end
