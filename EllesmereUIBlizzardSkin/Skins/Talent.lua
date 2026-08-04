@@ -71,12 +71,17 @@ WSkin:AddCallback("Skin_Talent", function()
 		local icon = _G["PlayerTalentFrameTalent"..i.."IconTexture"]
 
 		if talent then
+			local iconTexture = icon and icon:GetTexture()
+
 			WSkin:StripTextures(talent)
 			WSkin:CreateBackdrop(talent, "Default")
 
 			talent:SetFrameLevel(talent:GetParent():GetFrameLevel() + 2)
 
 			if icon then
+				if iconTexture then
+					icon:SetTexture(iconTexture)
+				end
 				WSkin:SetInside(icon)
 				icon:SetTexCoord(unpack(TEXCOORDS))
 				icon:SetDrawLayer("ARTWORK")
