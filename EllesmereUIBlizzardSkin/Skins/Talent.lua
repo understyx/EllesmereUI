@@ -74,6 +74,8 @@ WSkin:AddCallback("Skin_Talent", function()
 			WSkin:StripTextures(talent)
 			WSkin:CreateBackdrop(talent, "Default")
 
+			talent:SetFrameLevel(talent:GetParent():GetFrameLevel() + 2)
+
 			if icon then
 				WSkin:SetInside(icon)
 				icon:SetTexCoord(unpack(TEXCOORDS))
