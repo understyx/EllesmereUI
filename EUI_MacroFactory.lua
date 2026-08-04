@@ -239,6 +239,55 @@ function EllesmereUI.BuildMacroFactory(parent, startY, PP)
     --  Format: same as GENERAL_DEFS but fixedBody only (no checkboxes).
     --  Each entry: { name, icon, label, fixedBody, fixedTooltip (optional) }
     ---------------------------------------------------------------------------
+    local FALLBACK_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+
+    -- Validate a texture path; return it if valid or the fallback question-mark
+    -- icon otherwise.  In WotLK many retail/post-WotLK icons do not exist and
+    -- render as red squares.
+    local function SafeIcon(path)
+        if not path or path == "" then return FALLBACK_ICON end
+        local lower = path:lower()
+        if lower:find("ability_demonhunter")
+            or lower:find("ability_evoker")
+            or lower:find("ability_monk_tigerslust")
+            or lower:find("ability_monk_spearhand")
+            or lower:find("ability_monk_chicocoon")
+            or lower:find("ability_monk_summonserpentstatue")
+            or lower:find("monk_ability_summonoxstatue")
+            or lower:find("spell_monk_ringofpeace")
+            or lower:find("ability_ardenweald")
+            or lower:find("ability_maldraxxus")
+            or lower:find("inv_12_dh_void")
+            or lower:find("ability_xavius_dreamsimulacrum")
+            or lower:find("spell_mage_meteor")
+            or lower:find("achievement_zone_cataclysm")
+            or lower:find("ability_heroicleap")
+            or lower:find("spell_druid_ursolsvortex")
+            or lower:find("spell_druid_ironbark")
+            or lower:find("ability_druid_forceofnature")
+            or lower:find("spell_holy_rebuke")
+            or lower:find("priest_spell_leapoffaith")
+            or lower:find("ability_priest_angelicfeather")
+            or lower:find("spell_holy_powerwordbarrier")
+            or lower:find("ability_rogue_grapplinghook")
+            or lower:find("ability_rogue_coupdetat")
+            or lower:find("ability_shaman_windwalktotem")
+            or lower:find("ability_shaman_totemrelocation")
+            or lower:find("spell_shaman_spiritlink")
+            or lower:find("spell_warlock_demonicportal_green")
+            or lower:find("ability_warlock_baneofhavoc")
+            or lower:find("ability_warrior_safeguard")
+            or lower:find("ability_hunter_harpoon")
+            or lower:find("spell_deathknight_pillaroffrost")
+            or lower:find("ability_deathknight_asphixiate")
+            or lower:find("ability_deathknight_aoedeathgrip")
+            or lower:find("spell_warlock_soulburn")
+        then
+            return FALLBACK_ICON
+        end
+        return path
+    end
+
     local function mergeMacros(...)
         local t = {}
         for i = 1, select("#", ...) do
@@ -926,7 +975,7 @@ function EllesmereUI.BuildMacroFactory(parent, startY, PP)
             btn:SetFrameLevel(iconParent:GetFrameLevel() + 5)
 
             local tex = btn:CreateTexture(nil, "ARTWORK")
-            tex:SetAllPoints(); tex:SetTexture(def.macroIcon or def.icon); tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            tex:SetAllPoints(); tex:SetTexture(SafeIcon(def.macroIcon or def.icon)); tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             btn._tex = tex
 
             local bdr = EllesmereUI.SafeCreateFrame("Frame", nil, btn)
@@ -1017,7 +1066,7 @@ function EllesmereUI.BuildMacroFactory(parent, startY, PP)
                         icon = GetInventoryItemTexture("player", slot)
                     end
                 end
-                tex:SetTexture(icon or def.macroIcon or def.icon)
+                tex:SetTexture(SafeIcon(icon or def.macroIcon or def.icon))
             end
             btn._refreshIcon = RefreshIcon
             RefreshIcon()

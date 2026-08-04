@@ -2589,7 +2589,7 @@ EUICDMDumpDB = {
 						}, -- [31]
 						{
 							["column"] = 1,
-							["icon"] = "Interface\\Icons\\spell_holy_powerwordbarrier",
+							["icon"] = "Interface\\Icons\\spell_holy_divineprotection",
 							["name"] = "Divine Sacrifice",
 							["tier"] = 3,
 							["tabIndex"] = 2,
@@ -2619,7 +2619,7 @@ EUICDMDumpDB = {
 						}, -- [34]
 						{
 							["column"] = 1,
-							["icon"] = "Interface\\Icons\\spell_holy_powerwordbarrier",
+							["icon"] = "Interface\\Icons\\spell_holy_divineprotection",
 							["name"] = "Divine Guardian",
 							["tier"] = 4,
 							["tabIndex"] = 2,
@@ -6269,7 +6269,7 @@ EUICDMDumpDB = {
 							["tier"] = 3,
 							["tabIndex"] = 2,
 							["talentIndex"] = 6,
-							["icon"] = "Interface\\Icons\\spell_holy_powerwordbarrier",
+							["icon"] = "Interface\\Icons\\spell_holy_divineprotection",
 							["column"] = 1,
 						}, -- [32]
 						{
@@ -6299,7 +6299,7 @@ EUICDMDumpDB = {
 							["tier"] = 4,
 							["tabIndex"] = 2,
 							["talentIndex"] = 9,
-							["icon"] = "Interface\\Icons\\spell_holy_powerwordbarrier",
+							["icon"] = "Interface\\Icons\\spell_holy_divineprotection",
 							["column"] = 1,
 						}, -- [35]
 						{
@@ -8739,7 +8739,7 @@ EUICDMDumpDB = {
 							["name"] = "Divine Sacrifice",
 							["spellType"] = "SPELL",
 							["rank"] = "",
-							["icon"] = "Interface\\Icons\\spell_holy_powerwordbarrier",
+							["icon"] = "Interface\\Icons\\spell_holy_divineprotection",
 							["spellID"] = 64205,
 						}, -- [102]
 						{
