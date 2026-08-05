@@ -524,21 +524,44 @@ WSkin:AddCallback("Skin_Character", function()
 		end
 	end
 
-	WSkin:Size(CompanionModelFrame, 325, 174)
-	WSkin:Point(CompanionModelFrame, "TOPLEFT", 19, -71)
+	local function setRetailLikeCompanions()
+		if not CompanionModelFrame then return end
+		local gridCols = 3
+		for i = 1, 12 do
+			local button = _G["CompanionButton"..i]
+			if button then
+				button:ClearAllPoints()
+				if i == 1 then
+					WSkin:Point(button, "TOPLEFT", 22, -73)
+				elseif i % gridCols == 1 then
+					local prevBtn = _G["CompanionButton"..(i-gridCols)]
+					if prevBtn then
+						WSkin:Point(button, "TOP", prevBtn, "BOTTOM", 0, -5)
+					end
+				else
+					local prevBtn = _G["CompanionButton"..(i-1)]
+					if prevBtn then
+						WSkin:Point(button, "LEFT", prevBtn, "RIGHT", 5, 0)
+					end
+				end
+			end
+		end
 
-	WSkin:Point(CompanionModelFrameRotateLeftButton, "TOPLEFT", PetPaperDollFrame, "TOPLEFT", 23, -75)
-	WSkin:Point(CompanionModelFrameRotateRightButton, "TOPLEFT", CompanionModelFrameRotateLeftButton, "TOPRIGHT", 3, 0)
+		WSkin:Size(CompanionModelFrame, 205, 230)
+		WSkin:Point(CompanionModelFrame, "TOPRIGHT", -19, -71)
 
-	if CompanionButton1 then WSkin:Point(CompanionButton1, "TOPLEFT", 58, -308) end
+		WSkin:Point(CompanionModelFrameRotateLeftButton, "TOPLEFT", CompanionModelFrame, "TOPLEFT", 4, -4)
+		WSkin:Point(CompanionModelFrameRotateRightButton, "TOPLEFT", CompanionModelFrameRotateLeftButton, "TOPRIGHT", 3, 0)
 
-	WSkin:Width(CompanionSummonButton, 149)
-	WSkin:Point(CompanionSummonButton, "CENTER", -11, -24)
+		WSkin:Width(CompanionSummonButton, 205)
+		WSkin:Point(CompanionSummonButton, "TOPRIGHT", -19, -308)
 
-	WSkin:Point(CompanionPrevPageButton, "BOTTOMLEFT", 122, 92)
-	WSkin:Point(CompanionNextPageButton, "LEFT", CompanionPrevPageButton, "RIGHT", 83, 0)
+		WSkin:Point(CompanionPrevPageButton, "BOTTOMLEFT", 30, 92)
+		WSkin:Point(CompanionNextPageButton, "LEFT", CompanionPrevPageButton, "RIGHT", 60, 0)
 
-	WSkin:Point(CompanionPageNumber, "CENTER", -10, -155)
+		WSkin:Point(CompanionPageNumber, "CENTER", -85, -155)
+	end
+	setRetailLikeCompanions()
 
 	-- Reputation Frame
 	WSkin:StripTextures(ReputationFrame, true)
@@ -623,6 +646,10 @@ WSkin:AddCallback("Skin_Character", function()
 
 	-- Skill Frame
 	WSkin:StripTextures(SkillFrame, true)
+	WSkin:CreateBackdrop(SkillFrame, "Transparent")
+	WSkin:Point(SkillFrame.backdrop, "TOPLEFT", 11, -12)
+	WSkin:Point(SkillFrame.backdrop, "BOTTOMRIGHT", -32, 76)
+	WSkin:SetBackdropHitRect(SkillFrame, SkillFrame.backdrop)
 	WSkin:StripTextures(SkillFrameExpandButtonFrame)
 	WSkin:HandleCollapseExpandButton(SkillFrameCollapseAllButton, "+")
 
@@ -693,6 +720,10 @@ WSkin:AddCallback("Skin_Character", function()
 	local function skinTokenFrame()
 		if not TokenFrame then return end
 		WSkin:StripTextures(TokenFrame, true)
+		WSkin:CreateBackdrop(TokenFrame, "Transparent")
+		WSkin:Point(TokenFrame.backdrop, "TOPLEFT", 11, -12)
+		WSkin:Point(TokenFrame.backdrop, "BOTTOMRIGHT", -32, 76)
+		WSkin:SetBackdropHitRect(TokenFrame, TokenFrame.backdrop)
 
 		local tChildren = {TokenFrame:GetChildren()}
 		if tChildren[4] then tChildren[4]:Hide() end

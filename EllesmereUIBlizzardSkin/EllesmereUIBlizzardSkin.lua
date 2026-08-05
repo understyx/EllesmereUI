@@ -1951,6 +1951,18 @@ do
         local gmBg = GameMenuFrame:CreateTexture(nil, "BACKGROUND")
         gmBg:SetAllPoints()
         gmBg:SetTexture(RS.BG_R, RS.BG_G, RS.BG_B, RS.QT_ALPHA)
+
+        if GameMenuFrame.NineSlice then GameMenuFrame.NineSlice:SetAlpha(0) end
+        if GameMenuFrame.Border then GameMenuFrame.Border:SetAlpha(0) end
+
+        -- style GameMenuFrame in EllesmereUI style properly
+        local WSkin = _G.EllesmereUIBlizzardSkin
+        if WSkin then
+            WSkin:StripTextures(GameMenuFrame, true)
+            WSkin:CreateBackdrop(GameMenuFrame, "Transparent")
+            WSkin:Point(GameMenuFrame.backdrop, "TOPLEFT", 0, 0)
+            WSkin:Point(GameMenuFrame.backdrop, "BOTTOMRIGHT", 0, 0)
+        end
         local function ApplyButtonStyle(btn)
             local d = GetFFD(btn)
             -- Blizzard's pooled buttons are skinned in this addon's private

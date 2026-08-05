@@ -29,6 +29,10 @@ Skins\Merchant.lua
 Skins\Quest.lua
 Skins\Talent.lua
 Skins\Worldmap.lua
+Skins\Social.lua
+Skins\Guild.lua
+Skins\PVP.lua
+Skins\Inspect.lua
 
 # Options
 EUI_BlizzardSkin_Options.lua
