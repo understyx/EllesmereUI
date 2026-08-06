@@ -3,6 +3,8 @@
 An in-progress port of EllesmereUI for World of Warcraft: Wrath of the Lich King
 3.3.5a. It is experimental and not yet ready for general use.
 
+NB! This isn't trying to be 1 to 1 backport of EllesmereUI. Sorry if somethings don't work. Somethings simply aren't possible on default WoTLK client..
+
 ## Installation
 
 1. Clone or copy this repository into your WoW `Interface/AddOns` directory as
