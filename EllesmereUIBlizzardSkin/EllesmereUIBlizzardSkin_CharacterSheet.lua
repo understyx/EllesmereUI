@@ -59,9 +59,7 @@ local function EUI_ScanInventoryItem(slotID, unit)
     return data
 end
 
--- Upgrade track lookup lives in parent addon (EllesmereUI.lua) so Bags can
--- share it.  Local alias for the hot path.
-local EUI_GetUpgradeTrack = EllesmereUI.GetUpgradeTrack
+
 
 -- Language-agnostic: prefers line-type match
 -- (Enum.TooltipDataLineType.ItemEnchantmentPermanent / 15), falls back to a
@@ -857,9 +855,45 @@ local function SkinCharacterSheet()
             end
         end
 
+        local function SetSurface(frame, r, g, b, a)
+            if not frame or GetFFD(frame)._euiSurface then return end
+            frame:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8X8",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                edgeSize = 1,
+            })
+            frame:SetBackdropColor(r or 0.025, g or 0.035, b or 0.04, a or 0.92)
+            frame:SetBackdropBorderColor(1, 1, 1, 0.10)
+            GetFFD(frame)._euiSurface = true
+        end
+
+        local function StyleRegionFonts(frame, size, alpha)
+            if not frame or not frame.GetRegions then return end
+            for i = 1, select("#", frame:GetRegions()) do
+                local region = select(i, frame:GetRegions())
+                if region and region.IsObjectType and region:IsObjectType("FontString") then
+                    region:SetFont(fontPath, size or 10, "")
+                    region:SetTextColor(1, 1, 1, alpha or 0.82)
+                end
+            end
+        end
+
+        -- CharacterFrame is widened by the themed sheet, but Blizzard's
+        -- native subframes retain their original 384px width.  A wider child
+        -- does not fix that: the parent clips it.  Keep every restored page
+        -- on the same geometry as the themed sheet.
+        local function SizeThemedPane(pane)
+            if not pane then return end
+            pane:ClearAllPoints()
+            pane:SetWidth(550)
+            pane:SetPoint("TOPLEFT", CharacterFrame, "TOPLEFT", 0, 0)
+            pane:SetPoint("BOTTOMLEFT", CharacterFrame, "BOTTOMLEFT", 0, 0)
+        end
+
         local pet = _G.PetPaperDollFrame
         if pet and not GetFFD(pet)._euiThemedPage then
             GetFFD(pet)._euiThemedPage = true
+            SizeThemedPane(pet)
             WSkin:StripTextures(pet, true)
             AddPageSurface(pet)
             for i = 1, 3 do
@@ -875,22 +909,330 @@ local function SkinCharacterSheet()
             end
             SkinButton(_G.PetPaperDollCloseButton)
             SkinButton(_G.CompanionSummonButton)
+
+            ----------------------------------------------------------------
+            -- WotLK's mount page is a small paged icon grid.  Replace only
+            -- that mode with a wide, scrollable journal-style list.  Critters
+            -- and the hunter-pet paper doll retain Blizzard's native logic.
+            ----------------------------------------------------------------
+            local companionFrame = _G.PetPaperDollFrameCompanionFrame
+            if companionFrame and _G.GetNumCompanions and _G.GetCompanionInfo then
+                local mountPanel = EllesmereUI.SafeCreateFrame("Frame", "EUI_CharacterMountList", pet)
+                mountPanel:SetPoint("TOPLEFT", pet, "TOPLEFT", 17, -57)
+                mountPanel:SetPoint("BOTTOMRIGHT", pet, "BOTTOMRIGHT", -17, 48)
+                mountPanel:SetFrameLevel(companionFrame:GetFrameLevel() + 4)
+                SetSurface(mountPanel, 0.012, 0.018, 0.022, 0.94)
+                mountPanel:Hide()
+
+                local title = mountPanel:CreateFontString(nil, "OVERLAY")
+                title:SetFont(fontPath, 13, "")
+                title:SetText(_G.MOUNTS or "Mounts")
+                title:SetTextColor(1, 1, 1, 0.92)
+                title:SetPoint("TOPLEFT", 12, -10)
+
+                local countText = mountPanel:CreateFontString(nil, "OVERLAY")
+                countText:SetFont(fontPath, 10, "")
+                countText:SetTextColor(1, 1, 1, 0.45)
+                countText:SetPoint("LEFT", title, "RIGHT", 8, 0)
+
+                local search = CreateFrame("EditBox", nil, mountPanel)
+                search:SetSize(226, 24)
+                search:SetPoint("TOPLEFT", 12, -31)
+                search:SetAutoFocus(false)
+                search:SetFont(fontPath, 10, "")
+                search:SetTextInsets(8, 8, 0, 0)
+                SetSurface(search, 0.025, 0.035, 0.04, 1)
+                local searchHint = search:CreateFontString(nil, "ARTWORK")
+                searchHint:SetFont(fontPath, 10, "")
+                searchHint:SetText(_G.SEARCH or "Search")
+                searchHint:SetTextColor(1, 1, 1, 0.32)
+                searchHint:SetPoint("LEFT", 8, 0)
+
+                local list = EllesmereUI.SafeCreateFrame("Frame", nil, mountPanel)
+                list:SetPoint("TOPLEFT", 12, -61)
+                list:SetPoint("BOTTOMLEFT", 12, 12)
+                list:SetWidth(226)
+
+                local divider = mountPanel:CreateTexture(nil, "ARTWORK")
+                divider:SetTexture(1, 1, 1, 0.09)
+                divider:SetWidth(1)
+                divider:SetPoint("TOP", mountPanel, "TOP", -4, -12)
+                divider:SetPoint("BOTTOM", mountPanel, "BOTTOM", -4, 12)
+
+                local preview = EllesmereUI.SafeCreateFrame("Frame", nil, mountPanel)
+                preview:SetPoint("TOPLEFT", divider, "TOPRIGHT", 12, 0)
+                preview:SetPoint("BOTTOMRIGHT", mountPanel, "BOTTOMRIGHT", -12, 45)
+                SetSurface(preview, 0.018, 0.025, 0.03, 0.72)
+
+                local emptyText = preview:CreateFontString(nil, "OVERLAY")
+                emptyText:SetFont(fontPath, 11, "")
+                emptyText:SetText(_G.NO_MOUNTS or "No mounts found")
+                emptyText:SetTextColor(1, 1, 1, 0.42)
+                emptyText:SetPoint("CENTER")
+                emptyText:Hide()
+
+                local action = EllesmereUI.SafeCreateFrame("Button", nil, mountPanel)
+                action:SetSize(118, 27)
+                action:SetPoint("BOTTOMRIGHT", -12, 10)
+                action:SetNormalFontObject("GameFontNormal")
+                action:SetText(_G.MOUNT or "Summon")
+                SetSurface(action, 0.07, 0.105, 0.115, 1)
+                local actionHL = action:CreateTexture(nil, "HIGHLIGHT")
+                actionHL:SetTexture(1, 1, 1, 0.07)
+                actionHL:SetAllPoints()
+
+                local scroll = CreateFrame("Slider", nil, list)
+                scroll:SetOrientation("VERTICAL")
+                scroll:SetWidth(5)
+                scroll:SetPoint("TOPRIGHT", list, "TOPRIGHT", -1, -1)
+                scroll:SetPoint("BOTTOMRIGHT", list, "BOTTOMRIGHT", -1, 1)
+                scroll:SetMinMaxValues(0, 0)
+                scroll:SetValueStep(1)
+                scroll:SetValue(0)
+                local thumb = scroll:CreateTexture(nil, "OVERLAY")
+                thumb:SetTexture(EG.r or 0.51, EG.g or 0.784, EG.b or 1, 0.75)
+                thumb:SetSize(5, 34)
+                scroll:SetThumbTexture(thumb)
+
+                local ROW_COUNT, ROW_HEIGHT = 6, 40
+                local rows, filtered = {}, {}
+                local selectedIndex, scrollOffset = nil, 0
+
+                local function IsMountTab()
+                    if pet.selectedTab then return pet.selectedTab == 3 end
+                    local tab = _G.PetPaperDollFrameTab3
+                    return tab and tab.GetChecked and tab:GetChecked()
+                end
+
+                local model = _G.CompanionModelFrame
+                local modelLayout
+                if model then
+                    local point, relativeTo, relativePoint, x, y = model:GetPoint(1)
+                    modelLayout = {
+                        point = point, relativeTo = relativeTo, relativePoint = relativePoint,
+                        x = x, y = y, width = model:GetWidth(), height = model:GetHeight(),
+                        frameLevel = model:GetFrameLevel(),
+                    }
+                end
+
+                local function HideNativeMountGrid()
+                    for i = 1, 12 do
+                        local button = _G["CompanionButton" .. i]
+                        if button then button:Hide() end
+                    end
+                    for _, object in ipairs({
+                        _G.CompanionPrevPageButton, _G.CompanionNextPageButton,
+                        _G.CompanionPageNumber, _G.CompanionSummonButton,
+                    }) do
+                        if object then object:Hide() end
+                    end
+                end
+
+                local function UpdatePreview()
+                    local chosen
+                    for _, data in ipairs(filtered) do
+                        if data.index == selectedIndex then chosen = data; break end
+                    end
+                    emptyText:SetShown(not chosen)
+                    action:SetEnabled(chosen and true or false)
+                    action:SetAlpha(chosen and 1 or 0.35)
+                    if chosen then
+                        action:SetText(chosen.active and (_G.DISMISS or "Dismiss") or (_G.MOUNT or "Summon"))
+                        if model and model.SetCreature and chosen.creatureID then
+                            model:SetCreature(chosen.creatureID)
+                        end
+                    end
+                end
+
+                local function PaintRows()
+                    for rowIndex, row in ipairs(rows) do
+                        local data = filtered[scrollOffset + rowIndex]
+                        row.data = data
+                        row:SetShown(data and true or false)
+                        if data then
+                            row.icon:SetTexture(data.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+                            row.name:SetText(data.name or _G.UNKNOWN)
+                            row.active:SetShown(data.active and true or false)
+                            row.selected:SetShown(data.index == selectedIndex)
+                            row.name:SetTextColor(1, 1, 1, data.index == selectedIndex and 1 or 0.72)
+                        end
+                    end
+                    UpdatePreview()
+                end
+
+                local function SetOffset(value)
+                    local maxOffset = math.max(0, #filtered - ROW_COUNT)
+                    scrollOffset = math.max(0, math.min(maxOffset, math.floor((value or 0) + 0.5)))
+                    if scroll:GetValue() ~= scrollOffset then scroll:SetValue(scrollOffset) end
+                    PaintRows()
+                end
+
+                for i = 1, ROW_COUNT do
+                    local row = CreateFrame("Button", nil, list)
+                    row:SetHeight(ROW_HEIGHT - 2)
+                    row:SetPoint("TOPLEFT", 0, -((i - 1) * ROW_HEIGHT))
+                    row:SetPoint("RIGHT", list, "RIGHT", -9, 0)
+                    SetSurface(row, 0.03, 0.043, 0.048, i % 2 == 0 and 0.70 or 0.45)
+                    local selected = row:CreateTexture(nil, "BACKGROUND", nil, 1)
+                    selected:SetTexture(EG.r or 0.51, EG.g or 0.784, EG.b or 1, 0.13)
+                    selected:SetAllPoints()
+                    selected:Hide()
+                    row.selected = selected
+                    local icon = row:CreateTexture(nil, "ARTWORK")
+                    icon:SetSize(30, 30)
+                    icon:SetPoint("LEFT", 4, 0)
+                    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                    row.icon = icon
+                    local name = row:CreateFontString(nil, "OVERLAY")
+                    name:SetFont(fontPath, 10, "")
+                    name:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+                    name:SetPoint("RIGHT", row, "RIGHT", -15, 0)
+                    name:SetJustifyH("LEFT")
+                    name:SetWordWrap(false)
+                    row.name = name
+                    local active = row:CreateTexture(nil, "OVERLAY")
+                    active:SetTexture(EG.r or 0.51, EG.g or 0.784, EG.b or 1, 1)
+                    active:SetSize(3, 24)
+                    active:SetPoint("RIGHT", -4, 0)
+                    active:Hide()
+                    row.active = active
+                    local hover = row:CreateTexture(nil, "HIGHLIGHT")
+                    hover:SetTexture(1, 1, 1, 0.06)
+                    hover:SetAllPoints()
+                    row:SetScript("OnClick", function(self)
+                        if not self.data then return end
+                        selectedIndex = self.data.index
+                        PaintRows()
+                    end)
+                    row:SetScript("OnDoubleClick", function(self)
+                        if self.data and _G.CallCompanion then
+                            _G.CallCompanion("MOUNT", self.data.index)
+                        end
+                    end)
+                    rows[i] = row
+                end
+
+                local function RefreshMountList()
+                    if not IsMountTab() then return end
+                    local query = string.lower(search:GetText() or "")
+                    wipe(filtered)
+                    local total = _G.GetNumCompanions("MOUNT") or 0
+                    local activeIndex
+                    for index = 1, total do
+                        local creatureID, name, spellID, icon, active = _G.GetCompanionInfo("MOUNT", index)
+                        if active then activeIndex = index end
+                        if name and (query == "" or string.find(string.lower(name), query, 1, true)) then
+                            filtered[#filtered + 1] = {
+                                index = index, creatureID = creatureID, name = name,
+                                spellID = spellID, icon = icon, active = active,
+                            }
+                        end
+                    end
+                    if not selectedIndex then selectedIndex = activeIndex or (filtered[1] and filtered[1].index) end
+                    local selectedVisible = false
+                    for _, data in ipairs(filtered) do
+                        if data.index == selectedIndex then selectedVisible = true; break end
+                    end
+                    if not selectedVisible then selectedIndex = filtered[1] and filtered[1].index end
+                    countText:SetText(string.format("%d", #filtered))
+                    local maxOffset = math.max(0, #filtered - ROW_COUNT)
+                    scroll:SetMinMaxValues(0, maxOffset)
+                    scroll:SetShown(maxOffset > 0)
+                    SetOffset(math.min(scrollOffset, maxOffset))
+                end
+
+                local function ApplyMountMode()
+                    local isMount = IsMountTab()
+                    mountPanel:SetShown(isMount)
+                    -- On the way back to critters Blizzard's tab update has
+                    -- already restored precisely the buttons that exist on
+                    -- the current page; never force all twelve visible.
+                    if isMount then HideNativeMountGrid() end
+                    if model and modelLayout then
+                        model:ClearAllPoints()
+                        if isMount then
+                            model:SetPoint("TOPLEFT", mountPanel, "TOPLEFT", 259, -18)
+                            model:SetSize(238, 224)
+                            model:SetFrameLevel(mountPanel:GetFrameLevel() + 2)
+                        else
+                            model:SetPoint(modelLayout.point, modelLayout.relativeTo, modelLayout.relativePoint, modelLayout.x, modelLayout.y)
+                            model:SetSize(modelLayout.width, modelLayout.height)
+                            model:SetFrameLevel(modelLayout.frameLevel)
+                        end
+                    end
+                    if isMount then RefreshMountList() end
+                end
+
+                scroll:SetScript("OnValueChanged", function(_, value) SetOffset(value) end)
+                list:EnableMouseWheel(true)
+                list:SetScript("OnMouseWheel", function(_, delta) SetOffset(scrollOffset - delta) end)
+                search:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+                search:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+                search:SetScript("OnTextChanged", function(self)
+                    searchHint:SetShown(self:GetText() == "" and not self:HasFocus())
+                    scrollOffset = 0
+                    RefreshMountList()
+                end)
+                search:SetScript("OnEditFocusGained", function() searchHint:Hide() end)
+                search:SetScript("OnEditFocusLost", function(self) searchHint:SetShown(self:GetText() == "") end)
+                action:SetScript("OnClick", function()
+                    if selectedIndex and _G.CallCompanion then _G.CallCompanion("MOUNT", selectedIndex) end
+                end)
+                mountPanel:RegisterEvent("COMPANION_UPDATE")
+                mountPanel:SetScript("OnEvent", function() RefreshMountList() end)
+                companionFrame:HookScript("OnShow", ApplyMountMode)
+                if _G.PetPaperDollFrame_SetTab then hooksecurefunc("PetPaperDollFrame_SetTab", ApplyMountMode) end
+                if _G.PetPaperDollFrame_UpdateCompanions then
+                    hooksecurefunc("PetPaperDollFrame_UpdateCompanions", function()
+                        ApplyMountMode()
+                    end)
+                end
+                GetFFD(pet).applyMountMode = ApplyMountMode
+                ApplyMountMode()
+            end
         end
 
         local rep = _G.ReputationFrame
         if rep and not GetFFD(rep)._euiThemedPage then
             GetFFD(rep)._euiThemedPage = true
+            SizeThemedPane(rep)
             WSkin:StripTextures(rep, true)
             AddPageSurface(rep)
             WSkin:StripTextures(_G.ReputationListScrollFrame)
             SkinScrollBar(_G.ReputationListScrollFrameScrollBar)
+            if _G.ReputationListScrollFrame then
+                _G.ReputationListScrollFrame:ClearAllPoints()
+                _G.ReputationListScrollFrame:SetPoint("TOPLEFT", rep, "TOPLEFT", 22, -75)
+                _G.ReputationListScrollFrame:SetSize(485, 305)
+            end
+            if _G.ReputationListScrollFrameScrollBar and _G.ReputationListScrollFrame then
+                _G.ReputationListScrollFrameScrollBar:ClearAllPoints()
+                _G.ReputationListScrollFrameScrollBar:SetPoint("TOPLEFT", _G.ReputationListScrollFrame, "TOPRIGHT", 6, -17)
+                _G.ReputationListScrollFrameScrollBar:SetPoint("BOTTOMLEFT", _G.ReputationListScrollFrame, "BOTTOMRIGHT", 6, 17)
+            end
+            if _G.ReputationFrameFactionLabel then
+                _G.ReputationFrameFactionLabel:ClearAllPoints()
+                _G.ReputationFrameFactionLabel:SetPoint("TOPLEFT", rep, "TOPLEFT", 46, -58)
+            end
+            if _G.ReputationFrameStandingLabel then
+                _G.ReputationFrameStandingLabel:ClearAllPoints()
+                _G.ReputationFrameStandingLabel:SetPoint("TOPRIGHT", rep, "TOPRIGHT", -70, -58)
+            end
             for i = 1, 15 do
                 local row = _G["ReputationBar" .. i]
                 local bar = _G["ReputationBar" .. i .. "ReputationBar"]
                 local expandButton = _G["ReputationBar" .. i .. "ExpandOrCollapseButton"]
-                if row then WSkin:StripTextures(row, true) end
+                if row then
+                    WSkin:StripTextures(row, true)
+                    row:SetWidth(465)
+                    if i == 1 then
+                        row:ClearAllPoints()
+                        row:SetPoint("TOPLEFT", rep, "TOPLEFT", 28, -81)
+                    end
+                end
                 if bar then
                     WSkin:StripTextures(bar)
+                    bar:SetWidth(425)
                     bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
                     if not bar.backdrop then WSkin:CreateBackdrop(bar, "Default") end
                 end
@@ -924,6 +1266,7 @@ local function SkinCharacterSheet()
                 hooksecurefunc("ReputationFrame_Update", RefreshReputationExpandIcons)
             end
             RefreshReputationExpandIcons()
+            rep:HookScript("OnShow", function() SizeThemedPane(rep) end)
 
             local detail = _G.ReputationDetailFrame
             if detail then
@@ -945,26 +1288,47 @@ local function SkinCharacterSheet()
         local skills = _G.SkillFrame
         if skills and not GetFFD(skills)._euiThemedPage then
             GetFFD(skills)._euiThemedPage = true
+            SizeThemedPane(skills)
             WSkin:StripTextures(skills, true)
             AddPageSurface(skills)
             if _G.SkillFrameExpandButtonFrame then WSkin:StripTextures(_G.SkillFrameExpandButtonFrame) end
             if _G.SkillFrameCollapseAllButton then
                 WSkin:HandleCollapseExpandButton(_G.SkillFrameCollapseAllButton, "+")
             end
-            for i = 1, 12 do
-                local rank = _G["SkillRankFrame" .. i]
-                local rankBorder = _G["SkillRankFrame" .. i .. "Border"]
-                local rankBg = _G["SkillRankFrame" .. i .. "Background"]
-                local typeLabel = _G["SkillTypeLabel" .. i]
-                if rank then
-                    WSkin:StripTextures(rank)
-                    rank:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-                    if not rank.backdrop then WSkin:CreateBackdrop(rank, "Default") end
+            local function SkinSkillRows()
+                for i = 1, 12 do
+                    local rank = _G["SkillRankFrame" .. i]
+                    local rankBorder = _G["SkillRankFrame" .. i .. "Border"]
+                    local rankBg = _G["SkillRankFrame" .. i .. "Background"]
+                    local typeLabel = _G["SkillTypeLabel" .. i]
+                    if rank then
+                        if not GetFFD(rank)._euiSkillRow then
+                            GetFFD(rank)._euiSkillRow = true
+                            WSkin:StripTextures(rank)
+                            if rankBorder then WSkin:StripTextures(rankBorder) end
+                            if rankBg then rankBg:SetTexture(nil) end
+                            SetSurface(rank, 0.035, 0.050, 0.055, 0.96)
+                        end
+                        rank:SetWidth(435)
+                        rank:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+                        local statusTexture = rank:GetStatusBarTexture()
+                        if statusTexture then statusTexture:SetVertexColor(EG.r or 0.51, EG.g or 0.784, EG.b or 1, 0.72) end
+                        StyleRegionFonts(rank, 10, 0.90)
+                    end
+                    if typeLabel then
+                        if not GetFFD(typeLabel)._euiSkillHeader then
+                            GetFFD(typeLabel)._euiSkillHeader = true
+                            WSkin:StripTextures(typeLabel)
+                            WSkin:HandleCollapseExpandButton(typeLabel, "+")
+                            SetSurface(typeLabel, 0.055, 0.075, 0.08, 0.98)
+                        end
+                        typeLabel:SetWidth(465)
+                        StyleRegionFonts(typeLabel, 10, 0.95)
+                    end
                 end
-                if rankBorder then WSkin:StripTextures(rankBorder) end
-                if rankBg then rankBg:SetTexture(nil) end
-                if typeLabel then WSkin:HandleCollapseExpandButton(typeLabel, "+") end
             end
+            SkinSkillRows()
+            if _G.SkillFrame_Update then hooksecurefunc("SkillFrame_Update", SkinSkillRows) end
             if _G.SkillDetailStatusBar then
                 WSkin:StripTextures(_G.SkillDetailStatusBar)
                 _G.SkillDetailStatusBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
@@ -972,36 +1336,153 @@ local function SkinCharacterSheet()
                     WSkin:CreateBackdrop(_G.SkillDetailStatusBar, "Default")
                 end
             end
+            if _G.SkillDetailStatusBarUnlearnButton and not _G.SkillDetailStatusBarUnlearnButton.isSkinned then
+                WSkin:HandleCloseButton(_G.SkillDetailStatusBarUnlearnButton)
+            end
             WSkin:StripTextures(_G.SkillListScrollFrame)
             WSkin:StripTextures(_G.SkillDetailScrollFrame)
             SkinScrollBar(_G.SkillListScrollFrameScrollBar)
             SkinScrollBar(_G.SkillDetailScrollFrameScrollBar)
             SkinButton(_G.SkillFrameCancelButton)
+            if _G.SkillFrameCancelButton then
+                _G.SkillFrameCancelButton:ClearAllPoints()
+                _G.SkillFrameCancelButton:SetPoint("BOTTOMRIGHT", skills, "BOTTOMRIGHT", -22, 50)
+            end
+            if _G.SkillFrameExpandButtonFrame then
+                _G.SkillFrameExpandButtonFrame:ClearAllPoints()
+                _G.SkillFrameExpandButtonFrame:SetPoint("TOPLEFT", skills, "TOPLEFT", 22, -51)
+            end
+            if _G.SkillListScrollFrame then
+                _G.SkillListScrollFrame:ClearAllPoints()
+                _G.SkillListScrollFrame:SetPoint("TOPLEFT", skills, "TOPLEFT", 22, -75)
+                _G.SkillListScrollFrame:SetSize(485, 205)
+            end
+            if _G.SkillListScrollFrameScrollBar and _G.SkillListScrollFrame then
+                _G.SkillListScrollFrameScrollBar:ClearAllPoints()
+                _G.SkillListScrollFrameScrollBar:SetPoint("TOPLEFT", _G.SkillListScrollFrame, "TOPRIGHT", 6, -17)
+                _G.SkillListScrollFrameScrollBar:SetPoint("BOTTOMLEFT", _G.SkillListScrollFrame, "BOTTOMRIGHT", 6, 17)
+            end
+            if _G.SkillDetailScrollFrame and _G.SkillListScrollFrame then
+                _G.SkillDetailScrollFrame:ClearAllPoints()
+                _G.SkillDetailScrollFrame:SetPoint("TOPLEFT", _G.SkillListScrollFrame, "BOTTOMLEFT", 0, -8)
+                _G.SkillDetailScrollFrame:SetSize(485, 92)
+            end
+            if _G.SkillDetailScrollFrameScrollBar and _G.SkillDetailScrollFrame then
+                _G.SkillDetailScrollFrameScrollBar:ClearAllPoints()
+                _G.SkillDetailScrollFrameScrollBar:SetPoint("TOPLEFT", _G.SkillDetailScrollFrame, "TOPRIGHT", 6, -17)
+                _G.SkillDetailScrollFrameScrollBar:SetPoint("BOTTOMLEFT", _G.SkillDetailScrollFrame, "BOTTOMRIGHT", 6, 17)
+            end
+            if _G.SkillDetailStatusBar then _G.SkillDetailStatusBar:SetWidth(435) end
+            if _G.SkillDetailScrollFrame and _G.SkillDetailScrollFrame.GetScrollChild then
+                StyleRegionFonts(_G.SkillDetailScrollFrame:GetScrollChild(), 10, 0.76)
+            end
+            skills:HookScript("OnShow", function() SizeThemedPane(skills); SkinSkillRows() end)
         end
 
         local tokens = _G.TokenFrame
         if tokens and not GetFFD(tokens)._euiThemedPage then
             GetFFD(tokens)._euiThemedPage = true
+            SizeThemedPane(tokens)
             WSkin:StripTextures(tokens, true)
             AddPageSurface(tokens)
             SkinScrollBar(_G.TokenFrameContainerScrollBar)
             SkinButton(_G.TokenFrameCancelButton)
+            if _G.TokenFrameContainer then
+                _G.TokenFrameContainer:ClearAllPoints()
+                _G.TokenFrameContainer:SetPoint("TOPLEFT", tokens, "TOPLEFT", 22, -57)
+                _G.TokenFrameContainer:SetSize(485, 323)
+            end
+            if _G.TokenFrameContainerScrollBar and _G.TokenFrameContainer then
+                _G.TokenFrameContainerScrollBar:ClearAllPoints()
+                _G.TokenFrameContainerScrollBar:SetPoint("TOPLEFT", _G.TokenFrameContainer, "TOPRIGHT", 6, -17)
+                _G.TokenFrameContainerScrollBar:SetPoint("BOTTOMLEFT", _G.TokenFrameContainer, "BOTTOMRIGHT", 6, 17)
+            end
+            if _G.TokenFrameMoneyFrame then
+                _G.TokenFrameMoneyFrame:ClearAllPoints()
+                _G.TokenFrameMoneyFrame:SetPoint("BOTTOMRIGHT", tokens, "BOTTOMRIGHT", -38, 58)
+            end
+            if _G.TokenFrameCancelButton then
+                _G.TokenFrameCancelButton:ClearAllPoints()
+                _G.TokenFrameCancelButton:SetPoint("BOTTOMRIGHT", tokens, "BOTTOMRIGHT", -22, 50)
+            end
 
             local function SkinTokenRows()
                 local container = _G.TokenFrameContainer
                 if not (container and container.buttons) then return end
-                for _, button in ipairs(container.buttons) do
+                local offset = _G.HybridScrollFrame_GetOffset and HybridScrollFrame_GetOffset(container) or 0
+                for rowIndex, button in ipairs(container.buttons) do
+                    local currencyIndex = offset + rowIndex
+                    local name, isHeader, isExpanded, _, _, _, extraCurrencyType, icon
+                    if _G.GetCurrencyListInfo then
+                        name, isHeader, isExpanded, _, _, _, extraCurrencyType, icon = GetCurrencyListInfo(currencyIndex)
+                    end
                     if not GetFFD(button)._euiThemedRow then
                         GetFFD(button)._euiThemedRow = true
                         if button.categoryLeft then button.categoryLeft:Hide() end
                         if button.categoryRight then button.categoryRight:Hide() end
-                        if button.highlight then button.highlight:SetTexture(1, 1, 1, 0.06) end
+                        if button.highlight then
+                            button.highlight:SetTexture(1, 1, 1, 0.07)
+                            button.highlight:SetAllPoints(button)
+                        end
                         if button.expandIcon then
                             button.expandIcon:SetSize(14, 14)
                             button.expandIcon:SetTexCoord(0, 1, 0, 1)
                         end
-                        if button.icon then button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92) end
+                        SetSurface(button, 0.030, 0.043, 0.048, 0.78)
+                        StyleRegionFonts(button, 10, 0.84)
+                        if button.icon then
+                            button.icon:SetSize(26, 26)
+                            button.icon:ClearAllPoints()
+                            button.icon:SetPoint("LEFT", button, "LEFT", 24, 0)
+                            button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                            local iconBorder = button:CreateTexture(nil, "BACKGROUND", nil, 2)
+                            iconBorder:SetTexture(1, 1, 1, 0.12)
+                            iconBorder:SetPoint("TOPLEFT", button.icon, "TOPLEFT", -1, 1)
+                            iconBorder:SetPoint("BOTTOMRIGHT", button.icon, "BOTTOMRIGHT", 1, -1)
+                            GetFFD(button).iconBorder = iconBorder
+                        end
                     end
+                    button:SetWidth(470)
+                    button:SetBackdropColor(
+                        isHeader and 0.055 or 0.030,
+                        isHeader and 0.075 or 0.043,
+                        isHeader and 0.080 or 0.048,
+                        isHeader and 0.98 or (rowIndex % 2 == 0 and 0.80 or 0.62))
+                    button:SetBackdropBorderColor(1, 1, 1, isHeader and 0.14 or 0.06)
+
+                    if button.expandIcon and isHeader then
+                        button.expandIcon:SetTexture(isExpanded
+                            and "Interface\\Buttons\\UI-MinusButton-UP"
+                            or "Interface\\Buttons\\UI-PlusButton-UP")
+                    end
+                    if button.icon and not isHeader then
+                        if extraCurrencyType == 2 then
+                            local faction = UnitFactionGroup("player")
+                            if faction then
+                                button.icon:SetTexture("Interface\\TargetingFrame\\UI-PVP-" .. faction)
+                                button.icon:SetTexCoord(0.0625, 0.625, 0.015625, 0.578125)
+                            end
+                        elseif icon then
+                            button.icon:SetTexture(icon)
+                            button.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                        end
+                    end
+
+                    local nameRegion = button.name or button.Name or button.currencyName
+                    if nameRegion and nameRegion.SetFont then
+                        nameRegion:SetFont(fontPath, 10, "")
+                        nameRegion:SetTextColor(1, 1, 1, isHeader and 0.96 or 0.82)
+                        nameRegion:ClearAllPoints()
+                        nameRegion:SetPoint("LEFT", button, "LEFT", isHeader and 25 or 59, 0)
+                        nameRegion:SetPoint("RIGHT", button, "RIGHT", -72, 0)
+                        nameRegion:SetJustifyH("LEFT")
+                    end
+                    local countRegion = button.count or button.Count
+                    if countRegion and countRegion.SetFont then
+                        countRegion:SetFont(fontPath, 10, "")
+                        countRegion:SetTextColor(1, 1, 1, 0.58)
+                    end
+                    if GetFFD(button).iconBorder then GetFFD(button).iconBorder:SetShown(not isHeader) end
                 end
             end
             SkinTokenRows()
@@ -1009,6 +1490,10 @@ local function SkinCharacterSheet()
             if _G.TokenFrameContainer and _G.TokenFrameContainer.update then
                 hooksecurefunc(_G.TokenFrameContainer, "update", SkinTokenRows)
             end
+            tokens:HookScript("OnShow", function()
+                SizeThemedPane(tokens)
+                SkinTokenRows()
+            end)
 
             local popup = _G.TokenFramePopup
             if popup then
@@ -4483,31 +4968,7 @@ local function SkinCharacterSheet()
             GetFFD(slot).enchantHoverFrame = hoverFrame
         end
 
-        -- Create upgrade track labels (positioned relative to itemlevel)
-        if slot and not GetFFD(slot).upgradeTrackLabel and GetFFD(slot).itemLevelLabel then
-            local upgradeTrackSize = EllesmereUIDB and EllesmereUIDB.charSheetUpgradeTrackSize or 11
-            local upgradeTrackLabel = textOverlayFrame:CreateFontString(nil, "OVERLAY")
-            upgradeTrackLabel:SetFont(fontPath, upgradeTrackSize, "")
-            upgradeTrackLabel:SetTextColor(1, 1, 1, 0.6)
-            upgradeTrackLabel:SetJustifyH("CENTER")
 
-            -- Position beside itemlevel label based on column
-            if tContains(leftColumnSlots, slotName) then
-                -- Left column: upgradeTrack RIGHT of itemLevel
-                upgradeTrackLabel:SetPoint("LEFT", GetFFD(slot).itemLevelLabel, "RIGHT", 3, 0)
-            elseif tContains(rightColumnSlots, slotName) then
-                -- Right column: upgradeTrack LEFT of itemLevel
-                upgradeTrackLabel:SetPoint("RIGHT", GetFFD(slot).itemLevelLabel, "LEFT", -3, 0)
-            elseif slotName == "CharacterMainHandSlot" then
-                -- MainHand: upgradeTrack LEFT of itemLevel
-                upgradeTrackLabel:SetPoint("RIGHT", GetFFD(slot).itemLevelLabel, "LEFT", -3, 0)
-            elseif slotName == "CharacterSecondaryHandSlot" then
-                -- OffHand: upgradeTrack RIGHT of itemLevel
-                upgradeTrackLabel:SetPoint("LEFT", GetFFD(slot).itemLevelLabel, "RIGHT", 3, 0)
-            end
-
-            GetFFD(slot).upgradeTrackLabel = upgradeTrackLabel
-        end
     end
 
     -- Update slot borders on inventory changes
@@ -4962,9 +5423,8 @@ local function SkinCharacterSheet()
             itemLevel = ilvl or ""
             itemQuality = quality
 
-            -- Enchant via C_TooltipInfo; upgrade track via C_Item (no tooltip).
+            -- Enchant via C_TooltipInfo.
             enchantText = EUI_GetEnchantText(slot:GetID())
-            upgradeTrackText, upgradeTrackColor = EUI_GetUpgradeTrack(itemLink)
         end
 
         -- Resolve the item-level display color once (custom override > upgrade
@@ -4974,8 +5434,7 @@ local function SkinCharacterSheet()
         local ilvlColor
         if EllesmereUIDB and EllesmereUIDB.charSheetItemLevelUseColor and EllesmereUIDB.charSheetItemLevelColor then
             ilvlColor = EllesmereUIDB.charSheetItemLevelColor
-        elseif upgradeTrackText ~= "" and upgradeTrackColor then
-            ilvlColor = upgradeTrackColor
+
         elseif (not EllesmereUIDB or EllesmereUIDB.charSheetColorItemLevel ~= false) and itemQuality then
             local r, g, b = GetItemQualityColor(itemQuality)
             ilvlColor = { r = r, g = g, b = b }
@@ -5472,13 +5931,12 @@ function EllesmereUI._applyCharSheetTextSizes()
     if not CharacterFrame then return end
 
     local itemLevelSize = EllesmereUIDB and EllesmereUIDB.charSheetItemLevelSize or 11
-    local upgradeTrackSize = EllesmereUIDB and EllesmereUIDB.charSheetUpgradeTrackSize or 11
+
     local enchantSize = EllesmereUIDB and EllesmereUIDB.charSheetEnchantSize or 9
 
     local itemLevelShadow = EllesmereUIDB and EllesmereUIDB.charSheetItemLevelShadow or false
     local itemLevelOutline = EllesmereUIDB and EllesmereUIDB.charSheetItemLevelOutline or false
-    local upgradeTrackShadow = EllesmereUIDB and EllesmereUIDB.charSheetUpgradeTrackShadow or false
-    local upgradeTrackOutline = EllesmereUIDB and EllesmereUIDB.charSheetUpgradeTrackOutline or false
+
     local enchantShadow = EllesmereUIDB and EllesmereUIDB.charSheetEnchantShadow or false
     local enchantOutline = EllesmereUIDB and EllesmereUIDB.charSheetEnchantOutline or false
 
@@ -5498,14 +5956,7 @@ function EllesmereUI._applyCharSheetTextSizes()
                 if EllesmereUI and EllesmereUI.PrimeFontShadow then EllesmereUI.PrimeFontShadow(GetFFD(slot).itemLevelLabel, itemLevelShadow) end
                 GetFFD(slot).itemLevelLabel:SetFont(fontPath, itemLevelSize, flags)
             end
-            if GetFFD(slot).upgradeTrackLabel then
-                local flags = ""
-                if upgradeTrackOutline then
-                    flags = "OUTLINE, SLUG"
-                end
-                if EllesmereUI and EllesmereUI.PrimeFontShadow then EllesmereUI.PrimeFontShadow(GetFFD(slot).upgradeTrackLabel, upgradeTrackShadow) end
-                GetFFD(slot).upgradeTrackLabel:SetFont(fontPath, upgradeTrackSize, flags)
-            end
+
             if GetFFD(slot).enchantLabel then
                 local flags = ""
                 if enchantOutline then
@@ -5732,28 +6183,4 @@ function EllesmereUI._refreshItemLevelColors()
     end
 end
 
--- Function to refresh upgrade track colors
-function EllesmereUI._refreshUpgradeTrackColors()
-    local itemSlots = EUI_GEAR_SLOTS
 
-    for _, slotName in ipairs(itemSlots) do
-        local slot = _G[slotName]
-        if slot and GetFFD(slot).upgradeTrackLabel then
-            local itemLink = GetInventoryItemLink("player", slot:GetID())
-            if itemLink then
-                -- Upgrade track color via C_Item.GetItemUpgradeInfo (no tooltip).
-                local _, upgradeTrackColor = EUI_GetUpgradeTrack(itemLink)
-
-                -- Apply color
-                local displayColor
-                if EllesmereUIDB and EllesmereUIDB.charSheetUpgradeTrackUseColor and EllesmereUIDB.charSheetUpgradeTrackColor then
-                    displayColor = EllesmereUIDB.charSheetUpgradeTrackColor
-                else
-                    displayColor = upgradeTrackColor
-                end
-
-                GetFFD(slot).upgradeTrackLabel:SetTextColor(displayColor.r, displayColor.g, displayColor.b, 0.8)
-            end
-        end
-    end
-end

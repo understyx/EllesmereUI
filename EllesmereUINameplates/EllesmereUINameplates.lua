@@ -4987,9 +4987,7 @@ local function RefreshThreatCache()
     or (C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap()) then
         _inThreatContent = false
     else
-        local isDelve = C_PartyInfo and C_PartyInfo.IsDelveInProgress and C_PartyInfo.IsDelveInProgress()
-        _inThreatContent = (instanceType == "party" or instanceType == "raid"
-                            or isDelve)
+        _inThreatContent = (instanceType == "party" or instanceType == "raid")
     end
     -- Role: cache so we don't recalculate on every nameplate update
     local role = UnitGroupRolesAssigned("player")

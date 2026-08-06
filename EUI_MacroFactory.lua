@@ -617,9 +617,13 @@ function EllesmereUI.BuildMacroFactory(parent, startY, PP)
         local out = text:gsub("{(%d+)}", function(n)
             local id = spells[tonumber(n)]
             if not id then return "{" .. n .. "}" end
-            local info = C_Spell.GetSpellInfo(id)
+            local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(id)
             if info and info.name then return info.name end
-            C_Spell.RequestLoadSpellData(id)
+            -- RequestLoadSpellData is a retail-only async helper. Legacy clients
+            -- resolve cached spell data synchronously and do not expose it.
+            if C_Spell and C_Spell.RequestLoadSpellData then
+                C_Spell.RequestLoadSpellData(id)
+            end
             missing = true
             return ""
         end)

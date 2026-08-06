@@ -68,10 +68,6 @@ local function SessionHistorySafe()
 end
 
 local function InOpenWorld()
-    -- Housing plots register as "scenario" but chat is unrestricted there
-    if C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot() then
-        return true
-    end
     local inInstance, instanceType = IsInInstance()
     if not inInstance then return true end
     return instanceType == "none" or instanceType == ""

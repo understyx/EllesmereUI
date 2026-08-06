@@ -114,7 +114,7 @@ initFrame:SetScript("OnEvent", function(self)
         local visRow
         visRow, h = EllesmereUI.BuildVisibilityModeRow(W, parent, y,
             { getStore = DB, legacyKey = "visibility",
-              caps = { partyIncludesRaid = false, luaDragonriding = true },
+              caps = { partyIncludesRaid = false },
               onChanged = function() RefreshAll() end },
             { type="dropdown", text="Visibility Options",
               values={ __placeholder = "..." }, order={ "__placeholder" },

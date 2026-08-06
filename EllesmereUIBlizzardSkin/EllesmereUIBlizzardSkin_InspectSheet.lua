@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 --  Themed Inspect Sheet
 --  Mirrors the Character Sheet skinning for inspected characters.
---  Shared helpers (EllesmereUI.GetUpgradeTrack, EllesmereUI.GetEnchantText)
+--  Shared helpers (EllesmereUI.GetEnchantText)
 --  are exported by CharacterSheet and loaded before this file.
 -------------------------------------------------------------------------------
 local ADDON_NAME, ns = ...
@@ -131,12 +131,9 @@ local function EUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
 
             ilvlText:SetText(ilvl)
 
-            local upgradeTrackText, upgradeTrackColor = EllesmereUI.GetUpgradeTrack(itemLink)
             local displayColor
             if EllesmereUIDB and EllesmereUIDB.charSheetItemLevelUseColor and EllesmereUIDB.charSheetItemLevelColor then
                 displayColor = EllesmereUIDB.charSheetItemLevelColor
-            elseif upgradeTrackText ~= "" and upgradeTrackColor then
-                displayColor = upgradeTrackColor
             elseif (not EllesmereUIDB or EllesmereUIDB.charSheetColorItemLevel ~= false) then
                 local _, _, quality = GetItemInfo(itemLink)
                 if quality then
@@ -222,30 +219,7 @@ local function EUI_UpdateSlotStyle(slotName, slotID, textOverlayFrame, isRightCo
         end
     end
 
-    -- Upgrade track label (font size matches CharacterSheet)
-    if itemLink and not GetFFD(slot).upgradeText and GetFFD(slot).iLvlText and not skipLabels then
-        local upgradeTrackSize = EllesmereUIDB and EllesmereUIDB.charSheetUpgradeTrackSize or 11
-        local upgradeText, upgradeColor = EllesmereUI.GetUpgradeTrack(itemLink)
-        if upgradeText and upgradeText ~= "" then
-            local upgradeLabel = textOverlayFrame:CreateFontString(nil, "OVERLAY")
-            upgradeLabel:SetFont(fontPath, upgradeTrackSize, "")
-            upgradeLabel:SetTextColor(upgradeColor.r, upgradeColor.g, upgradeColor.b, 0.8)
-            upgradeLabel:SetJustifyH("CENTER")
 
-            if slotName == "InspectMainHandSlot" then
-                upgradeLabel:SetPoint("RIGHT", GetFFD(slot).iLvlText, "LEFT", -3, 0)
-            elseif slotName == "InspectSecondaryHandSlot" then
-                upgradeLabel:SetPoint("LEFT", GetFFD(slot).iLvlText, "RIGHT", 3, 0)
-            elseif isRightColumn then
-                upgradeLabel:SetPoint("RIGHT", GetFFD(slot).iLvlText, "LEFT", -3, 0)
-            else
-                upgradeLabel:SetPoint("LEFT", GetFFD(slot).iLvlText, "RIGHT", 3, 0)
-            end
-
-            upgradeLabel:SetText("(" .. upgradeText .. ")")
-            GetFFD(slot).upgradeText = upgradeLabel
-        end
-    end
 end
 
 -- Apply tab visibility: show labels only on Tab 1
@@ -257,7 +231,7 @@ local function ApplyTabVisibility(showLabels)
 
     -- Show/hide individual labels based on settings
     local showItemLevel = (not EllesmereUIDB) or (EllesmereUIDB.inspectShowItemLevel ~= false)
-    local showUpgradeTrack = (not EllesmereUIDB) or (EllesmereUIDB.inspectShowUpgradeTrack ~= false)
+
     local showEnchants = (not EllesmereUIDB) or (EllesmereUIDB.inspectShowEnchants ~= false)
 
     for slotName, _ in pairs(slotGridMap) do
@@ -267,9 +241,7 @@ local function ApplyTabVisibility(showLabels)
             if GetFFD(slot).iLvlText then
                 if showLabels and showItemLevel then GetFFD(slot).iLvlText:Show() else GetFFD(slot).iLvlText:Hide() end
             end
-            if GetFFD(slot).upgradeText then
-                if showLabels and showUpgradeTrack then GetFFD(slot).upgradeText:Show() else GetFFD(slot).upgradeText:Hide() end
-            end
+
             if GetFFD(slot).enchantText then
                 if showLabels and showEnchants then GetFFD(slot).enchantText:Show() else GetFFD(slot).enchantText:Hide() end
             end

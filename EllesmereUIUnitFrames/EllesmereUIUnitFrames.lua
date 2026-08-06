@@ -462,7 +462,6 @@ local defaults = {
             barVisibility = "always",
             oocFadeEnabled = false,  -- "Fade Out of Combat" toggle (off by default)
             oocAlpha       = 0.5,    -- whole-frame alpha while out of combat
-            visHideHousing = false,
             visOnlyInstances = false,
             visHideMounted = false,
             visHideNoTarget = false,
@@ -660,7 +659,6 @@ local defaults = {
             barVisibility = "always",
             oocFadeEnabled = false,  -- "Fade Out of Combat" toggle (off by default)
             oocAlpha       = 0.5,    -- whole-frame alpha while out of combat
-            visHideHousing = false,
             visOnlyInstances = false,
             visHideMounted = false,
             visHideNoTarget = false,
@@ -1013,7 +1011,6 @@ local defaults = {
             barVisibility = "always",
             oocFadeEnabled = false,  -- "Fade Out of Combat" toggle (off by default)
             oocAlpha       = 0.5,    -- whole-frame alpha while out of combat
-            visHideHousing = false,
             visOnlyInstances = false,
             visHideMounted = false,
             visHideNoTarget = false,
@@ -6041,8 +6038,7 @@ local function PT_InInstancedContent()
     local _, instanceType, difficultyID = GetInstanceInfo()
     if (tonumber(difficultyID) or 0) == 0 then return false end
     if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then return false end
-    local isDelve = C_PartyInfo and C_PartyInfo.IsDelveInProgress and C_PartyInfo.IsDelveInProgress()
-    return instanceType == "party" or instanceType == "raid" or isDelve
+    return instanceType == "party" or instanceType == "raid"
 end
 
 -- Lazily create the dedicated additive shadow border on the player frame. It
@@ -11318,7 +11314,6 @@ local function UnitFrame_OnLeave(self)
             local hasAnyHideOpt = s.visHideNoTarget
                                or s.visHideNoEnemy
                                or s.visHideMounted
-                               or s.visHideHousing
                                or s.visOnlyInstances
             local keepShown = (not hiddenByOpts) and hasAnyHideOpt
             leaveAlpha = keepShown and ns.ResolveFrameAlpha(s, InCombatLockdown()) or 0
@@ -12570,8 +12565,7 @@ function InitializeFrames()
                 -- legacy alpha-hide left an invisible click-absorbing frame
                 -- out of combat. Visibility is unchanged; the driver just
                 -- hides for real and flips frame-exactly at the combat edge.
-                if not drvSet and (vis == "show_dragonriding" or vis == "show_not_dragonriding"
-                    or vis == "in_combat" or vis == "out_of_combat") then
+                if not drvSet and (vis == "in_combat" or vis == "out_of_combat") then
                     drvSet = { [vis] = true }
                 end
                 local wantDriver
@@ -12637,7 +12631,6 @@ function InitializeFrames()
                     local hasAnyHideOpt = s.visHideNoTarget
                                        or s.visHideNoEnemy
                                        or s.visHideMounted
-                                       or s.visHideHousing
                                        or s.visOnlyInstances
                     if hiddenByOpts then
                         bodyAlpha = 0

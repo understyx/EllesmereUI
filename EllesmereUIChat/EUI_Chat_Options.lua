@@ -98,7 +98,7 @@ initFrame:SetScript("OnEvent", function(self)
         local visRow
         visRow, h = EllesmereUI.BuildVisibilityModeRow(W, parent, y,
             { getStore = DB, legacyKey = "visibility",
-              caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
+              caps = { partyIncludesRaid = false, noMouseover = true },
               onChanged = function()
                   if ECHAT.ResetIdleTimer then ECHAT.ResetIdleTimer() end
                   RefreshAll()
@@ -507,7 +507,6 @@ initFrame:SetScript("OnEvent", function(self)
             showGuild      = "Guild",
             showDurability = "Durability",
             showCopy       = "Copy Chat",
-            showPortals    = "M+ Portals",
             showVoice      = "Voice/Channels",
             showSettings   = "Settings",
         }
@@ -515,7 +514,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Scroll is pinned to the sidebar bottom, so its row is fixed.
         local sidebarIconItems = {}
         local sidebarOrderedKeys = ECHAT.ResolveSidebarIconOrder and ECHAT.ResolveSidebarIconOrder()
-            or { "showFriends", "showGuild", "showDurability", "showCopy", "showPortals", "showVoice", "showSettings" }
+            or { "showFriends", "showGuild", "showDurability", "showCopy", "showVoice", "showSettings" }
         for _, k in ipairs(sidebarOrderedKeys) do
             sidebarIconItems[#sidebarIconItems + 1] = { key = k, label = SIDEBAR_ICON_LABELS[k] }
         end

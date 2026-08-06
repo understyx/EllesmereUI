@@ -50,10 +50,6 @@ local function InRealInstancedContent()
         or iType == "arena" or iType == "pvp"
 end
 
-local function InMythicPlusKey()
-    return C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive
-        and C_ChallengeMode.IsChallengeModeActive()
-end
 
 -------------------------------------------------------------------------------
 --  Zone data
@@ -214,8 +210,7 @@ local function Collect()
     wipe(_missing)
 
     local inInstance = InRealInstancedContent()
-    local inKeystone = InMythicPlusKey()
-    if inKeystone or InCombat() or not inInstance then return end
+    if InCombat() or not inInstance then return end
 
     local reminders = GetReminders()
     if not reminders or #reminders == 0 then return end

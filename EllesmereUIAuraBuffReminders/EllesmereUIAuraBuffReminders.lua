@@ -272,35 +272,7 @@ local function InRealInstancedContent()
     return false
 end
 
-local function InMythicPlusKey()
-    return C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive and C_ChallengeMode.IsChallengeModeActive()
-end
 
-local function InMythicZeroDungeon()
-    if _cachedIType == "party" and (_cachedDiffID == 23 or _cachedDiffID == 8) then return true end
-    return false
-end
-
--- Mythic raid difficulty: fixed 20-player (16, PrimaryRaidMythic) or
--- flexible (233, RaidMythicFlexible, added in 12.0.x). Add future Mythic
--- raid difficulty IDs here so every gate below stays correct.
-local function IsMythicRaidDiff(d)
-    return d == 16 or d == 233
-end
-
--- Mythic 0 dungeon (party, normal difficulty 1) or Mythic raid (fixed or flex)
-local function InMythicZeroDungeonOrMythicRaid()
-    if InMythicZeroDungeon() then return true end
-    if IsInRaid() and IsMythicRaidDiff(_cachedDiffID) then return true end
-    return false
-end
-
--- Heroic+ content (heroic dungeon/raid or mythic dungeon/raid/M+)
-local function InHeroicOrMythicContent()
-    if _cachedIType == "party" and (_cachedDiffID == 2 or _cachedDiffID == 23 or _cachedDiffID == 8) then return true end
-    if _cachedIType == "raid" and (_cachedDiffID == 5 or _cachedDiffID == 6 or _cachedDiffID == 15 or IsMythicRaidDiff(_cachedDiffID)) then return true end
-    return false
-end
 
 local function InPvPInstance()
     return _cachedIType == "pvp" or _cachedIType == "arena"
@@ -425,7 +397,7 @@ local function IsUnderDuration(duration, expirationTime)
 
     local d = db.profile.display
     local thresholdSeconds
-    if InMythicZeroDungeon() then
+    if _cachedIType == "party" then
         thresholdSeconds = (d.showUnderDurationDungeon or 0) * 60
     elseif IsInRaid() then
         thresholdSeconds = (d.showUnderDurationRaid or 0) * 60
@@ -1036,7 +1008,6 @@ end
 
 local function PlayerHasWellFed()
     if InCombat() then return true end  -- never show food reminder in combat
-    if InMythicPlusKey() then return true end  -- can't act on it during M+, suppress
     if InPvPInstance() then return true end  -- food not trackable in PvP, suppress
     -- 12.1: any other restricted content (raid instances OOC) -- suppress.
     if EllesmereUI.AuraKit and EllesmereUI.AuraKit.AurasRestricted() then return true end
@@ -1057,7 +1028,6 @@ end
 local function PlayerHasFlaskBuff()
     -- Aura API is restricted in PvP and M+ keystones; suppress since player can't act on it.
     if InPvPInstance() then return true end
-    if InMythicPlusKey() then return true end
     -- 12.1: any other restricted content -- the name fallback below cannot
     -- populate there, so suppress instead of false-reminding.
     if EllesmereUI.AuraKit and EllesmereUI.AuraKit.AurasRestricted() then return true end
@@ -1085,7 +1055,6 @@ local function PlayerHasInkyBlackness()
     -- Aura API is restricted in PvP and M+ keystones; suppress since the buff
     -- can't be read there and the player can't act on it mid-key (mirrors flask/food).
     if InPvPInstance() then return true end
-    if InMythicPlusKey() then return true end
     if EllesmereUI.AuraKit and EllesmereUI.AuraKit.AurasRestricted() then return true end
     for i = 1, AURA_SCAN_LIMIT do
         local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
@@ -2180,11 +2149,8 @@ local specialsActive = inInstance or co.showSpecialsNonInstanced
         -- === INSTANCE-ONLY CONSUMABLES (weapon enchants, flask, food) ===
         if inInstance then
 
-        -- Consumables (weapon enchants, flask, food) only in Mythic dungeons
-        -- (M0/M+) and Normal/Heroic/Mythic raids (fixed 16 or flex 233).
-        if inInstance and (InMythicPlusKey()
-            or (_cachedIType == "party" and (_cachedDiffID == 23 or _cachedDiffID == 8))
-            or (_cachedIType == "raid" and (_cachedDiffID == 14 or _cachedDiffID == 15 or IsMythicRaidDiff(_cachedDiffID)))) then
+        -- Consumables (weapon enchants, flask, food) in all dungeons and raids.
+        if inInstance and (_cachedIType == "party" or _cachedIType == "raid") then
 
         -- Weapon Enchants (temp weapon enchant items)
         -- Skip if the player knows any imbue spell (Shaman imbues, Paladin rites).
@@ -2421,18 +2387,17 @@ local function Refresh()
     --  OOC-only sections: skip entirely during combat (only raid buffs
     --  and pet reminders can display in combat).
     ---------------------------------------------------------------------------
-    local specID, inInstance, inKeystone, inPvP
+    local specID, inInstance, inPvP
     if not inCombat then
         specID = GetSpecID()
         inInstance = inInstance or InRealInstancedContent()
-        inKeystone = InMythicPlusKey()
         inPvP = InPvPInstance()
     end
 
     ---------------------------------------------------------------------------
-    --  2) Auras (suppressed in M+ keystones and combat)
+    --  2) Auras (suppressed in combat)
     ---------------------------------------------------------------------------
-    if remindersOn and not inCombat and not inKeystone then
+    if remindersOn and not inCombat then
         _pt = EABR.ProfBegin("Auras")
         CollectAuras(missing, playerClass, specID, inInstance, inCombat)
         EABR.ProfEnd("Auras", _pt)
@@ -2702,7 +2667,7 @@ UpdateDurationTicker = function()
         EABR._durationTimer = nil
     end
 
-    if not (EABR._nextDurationRefreshTime and db and not InCombat() and not InMythicPlusKey()) then
+    if not (EABR._nextDurationRefreshTime and db and not InCombat()) then
         return
     end
 
@@ -2711,7 +2676,7 @@ UpdateDurationTicker = function()
 
     EABR._durationTimer = C_Timer.NewTimer(delay, function()
         EABR._durationTimer = nil
-        if InCombat() or InMythicPlusKey() then return end
+        if InCombat() then return end
         RequestRefresh()
     end)
 end

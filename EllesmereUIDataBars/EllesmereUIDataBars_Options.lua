@@ -70,7 +70,7 @@ initFrame:SetScript("OnEvent", function(self)
     local EST_LEN = {
         clock = 150, fps = 70, ms = 70, gold = 150, xprep = 140, spec = 130,
         profession = 120, travel = 40, micromenu = 340, currency = 90, spacer = 40,
-        durability = 70, profession2 = 120, greatvault = 100,
+        durability = 70, profession2 = 120,
         location = 140, coords = 70,
     }
 
@@ -2468,7 +2468,7 @@ initFrame:SetScript("OnEvent", function(self)
             local ICON_COLOR_BLOCKS = {
                 durability = true, gold = true, travel = true, spec = true,
                 profession = true, profession2 = true, currency = true,
-                greatvault = true, audio = true, location = true, coords = true,
+                audio = true, location = true, coords = true,
             }
             if ICON_COLOR_BLOCKS[b.type] then
                 local function IconFlagsOff()
@@ -2583,17 +2583,7 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Gold / travel: a type row rides the Icon Color row's
                 -- otherwise-empty right slot instead of trailing alone below.
                 local iconRowRight = { type = "label", text = "" }
-                if b.type == "travel" then
-                    -- Default ON (nil = shown), so this can't use MkToggle's
-                    -- `== true` read.
-                    iconRowRight = { type = "toggle", text = "Show M+ Portals",
-                      tooltip = "Show the Mythic+ teleport section in the tooltip. Ready rows are click-to-teleport.",
-                      getValue = function() return s.clickableTeleports ~= false end,
-                      setValue = function(v)
-                          s.clickableTeleports = v and true or false
-                          Apply()
-                      end }
-                end
+
                 if b.type == "audio" then
                     -- Default ON (nil = shown), so this can't use MkToggle's
                     -- `== true` read.
@@ -3121,7 +3111,6 @@ initFrame:SetScript("OnEvent", function(self)
                     { key = "quest",   label = "Quests" },
                     { key = "lfg",     label = "Group Finder" },
                     { key = "pvp",     label = "PvP" },
-                    { key = "housing", label = "Housing" },
                     { key = "journal", label = "Adventure Journal" },
                     { key = "pet",     label = "Collections" },
                     { key = "shop",    label = "Shop" },

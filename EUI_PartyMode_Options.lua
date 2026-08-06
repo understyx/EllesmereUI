@@ -267,9 +267,9 @@ do
             return function() return EllesmereUIDB and EllesmereUIDB[key] or false end
         end
 
-        -- Row 1: Randomly | Timed Keystone | Mythic Boss Kill
-        local CB_SPLITS = { 0.333, 0.333, 0.334, rowHeight = 36 }
-        _, h = W:TripleRow(parent, y,
+        -- Row 1: Randomly | Timed Keystone
+        local CB_SPLITS = { 0.5, 0.5, rowHeight = 36 }
+        _, h = W:DualRow(parent, y,
             { type = "checkbox", text = "Randomly",           getValue = TriggerGet("partyModeTriggerRandom"),     setValue = function(v)
                 if not EllesmereUIDB then EllesmereUIDB = {} end
                 EllesmereUIDB.partyModeTriggerRandom = v
@@ -282,7 +282,6 @@ do
                 if rl then for i = 1, #rl do rl[i]() end end
             end },
             { type = "checkbox", text = "Timed Keystone",     getValue = TriggerGet("partyModeTriggerKeystone"),   setValue = TriggerSet("partyModeTriggerKeystone") },
-            { type = "checkbox", text = "Mythic Boss Kill",   getValue = TriggerGet("partyModeTriggerMythicBoss"), setValue = TriggerSet("partyModeTriggerMythicBoss") },
             CB_SPLITS
         );  y = y - h
 
@@ -294,11 +293,10 @@ do
             CB_SPLITS
         );  y = y - h
 
-        -- Row 3: Normal Boss Kill | Raid Finder Boss Kill | Mythic 0 Completion
-        _, h = W:TripleRow(parent, y,
+        -- Row 3: Normal Boss Kill | Raid Finder Boss Kill
+        _, h = W:DualRow(parent, y,
             { type = "checkbox", text = "Normal Boss Kill",       getValue = TriggerGet("partyModeTriggerNormalBoss"),  setValue = TriggerSet("partyModeTriggerNormalBoss") },
             { type = "checkbox", text = "Raid Finder Boss Kill",  getValue = TriggerGet("partyModeTriggerLFRBoss"),     setValue = TriggerSet("partyModeTriggerLFRBoss") },
-            { type = "checkbox", text = "Mythic 0 Completion",    getValue = TriggerGet("partyModeTriggerMythic0"),     setValue = TriggerSet("partyModeTriggerMythic0") },
             CB_SPLITS
         );  y = y - h
 
@@ -336,11 +334,9 @@ do
             local function AnyCelebrationTriggerEnabled()
                 if not EllesmereUIDB then return false end
                 return EllesmereUIDB.partyModeTriggerKeystone
-                    or EllesmereUIDB.partyModeTriggerMythicBoss
                     or EllesmereUIDB.partyModeTriggerHeroicBoss
                     or EllesmereUIDB.partyModeTriggerNormalBoss
                     or EllesmereUIDB.partyModeTriggerLFRBoss
-                    or EllesmereUIDB.partyModeTriggerMythic0
                     or EllesmereUIDB.partyModeTriggerRatedBG
                     or EllesmereUIDB.partyModeTriggerRatedArena
                     or EllesmereUIDB.partyModeTriggerRandom
@@ -571,11 +567,10 @@ do
                 EllesmereUIDB.partyModeMPlusDuration = nil
                 EllesmereUIDB.partyModeBrightness = nil
                 EllesmereUIDB.partyModeTriggerKeystone = nil
-                EllesmereUIDB.partyModeTriggerMythicBoss = nil
+
                 EllesmereUIDB.partyModeTriggerHeroicBoss = nil
                 EllesmereUIDB.partyModeTriggerNormalBoss = nil
                 EllesmereUIDB.partyModeTriggerLFRBoss = nil
-                EllesmereUIDB.partyModeTriggerMythic0 = nil
                 EllesmereUIDB.partyModeTriggerBloodlust = nil
                 EllesmereUIDB.partyModeTriggerRatedBG = nil
                 EllesmereUIDB.partyModeTriggerRatedArena = nil

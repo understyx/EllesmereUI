@@ -26,7 +26,6 @@ local QT_DEFAULTS = {
             forceOnScreen        = true,
             visibility           = "always",
             visOnlyInstances     = false,
-            visHideHousing       = false,
             visHideMounted       = false,
             visHideNoTarget      = false,
             visHideNoEnemy       = false,

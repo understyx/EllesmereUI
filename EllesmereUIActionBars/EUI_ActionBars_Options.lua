@@ -1284,7 +1284,7 @@ initFrame:SetScript("OnEvent", function(self)
                   end,
                   legacyKey = "barVisibility",
                   label = leftLabel,
-                  caps = { partyIncludesRaid = false, luaDragonriding = true },
+                  caps = { partyIncludesRaid = false },
                   applyScalarFn = function(s, mode) ApplyVisibilityKey(s, mode) end,
                   disabledFn = disabledFn, disabledTooltip = disTip, rawTooltip = disTip and true or nil,
                   onChanged = function()
@@ -1310,7 +1310,6 @@ initFrame:SetScript("OnEvent", function(self)
                 function(k) return EAB.db.profile.bars[barKey][k] or false end,
                 function(k, v)
                     EAB.db.profile.bars[barKey][k] = v
-                    EAB:UpdateHousingVisibility()
                     EAB:ApplyCombatVisibility()
                     EllesmereUI:RefreshPage()
                 end)
@@ -1687,12 +1686,7 @@ initFrame:SetScript("OnEvent", function(self)
                     solo     = "The Pet Bar cannot use group-based visibility.",
                 }
             end
-            -- Data bars evaluate in Lua (non-secure), so their dragonriding
-            -- items depend on the gliding edge event; the secure bars'
-            -- drivers re-evaluate natively and never lock.
-            if IsDataBar() then visCaps.luaDragonriding = true end
 
-            local visRow1
             visRow1, h = EllesmereUI.BuildVisibilityModeRow(W, parent, y,
                 { getStore = function()
                       local s = SB()
@@ -1726,7 +1720,6 @@ initFrame:SetScript("OnEvent", function(self)
                     function(k) return SB()[k] or false end,
                     function(k, v)
                         SB()[k] = v
-                        EAB:UpdateHousingVisibility()
                         EAB:ApplyCombatVisibility()
                         EllesmereUI:RefreshPage()
                     end)

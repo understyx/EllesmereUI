@@ -267,7 +267,7 @@ Global Bindings
 Global Settings
 Globals
 Gold Summary
-Great Vault
+
 Group
 Grow
 Grow Direction
@@ -282,7 +282,6 @@ Health Bar Hash Lines
 Hex#
 Hide
 Hide Item Transforms
-Housing Dashboard
 Hover Top Bar\nDisabled
 Hover Top Bar\nEnabled
 Hovercast is not available for unmodified left/right click
@@ -356,7 +355,6 @@ Multi
 MultiBag
 Multiple
 My Profile
-Mythic+
 NAMEPLATE AURA FILTERS
 Name Taken
 Name the new filter.
@@ -391,7 +389,7 @@ OneBag
 OneBank
 OneWarbank
 Opacity
-Open Great Vault
+
 Override Active:
 Overrides
 Overwrite Existing Settings

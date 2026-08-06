@@ -65,7 +65,7 @@ local ADDON_FRAMES = {
     ["Blizzard_InspectUI"]                         = { "InspectFrame" },
     ["Blizzard_ItemInteractionUI"]                 = { "ItemInteractionFrame" },
     ["Blizzard_ItemSocketingUI"]                   = { "ItemSocketingFrame" },
-    ["Blizzard_ItemUpgradeUI"]                     = { "ItemUpgradeFrame" },
+
     ["Blizzard_MacroUI"]                           = { "MacroFrame" },
     ["Blizzard_MajorFactions"]                     = { "MajorFactionRenownFrame" },
     ["Blizzard_PlayerSpells"]                      = { "PlayerSpellsFrame" },
@@ -80,16 +80,7 @@ local ADDON_FRAMES = {
     ["Blizzard_Transmog"]                          = { "TransmogFrame" },
     ["Blizzard_WeeklyRewards"]                     = { "WeeklyRewardsFrame" },
     ["Blizzard_WorldMap"]                          = { "WorldMapFrame" },
-    -- Midnight Housing
-    ["Blizzard_HousingDashboard"]                  = { "HousingDashboardFrame" },
-    ["Blizzard_HousingCornerstone"]                = { "HousingCornerstonePurchaseFrame" },
-    ["Blizzard_HousingHouseFinder"]                = { "HouseFinderFrame" },
-    ["Blizzard_HousingHouseSettings"]              = { "HousingHouseSettingsFrame" },
-    ["Blizzard_HousingBulletinBoard"]              = { "HousingBulletinBoardFrame" },
-    ["Blizzard_HousingModelPreview"]               = { "HousingModelPreviewFrame" },
-    -- Delves
-    ["Blizzard_DelvesCompanionConfigurationFrame"] = { "DelvesCompanionConfigurationFrame", "DelvesCompanionAbilityListFrame" },
-    ["Blizzard_DelvesDifficultyPicker"]            = { "DelvesDifficultyPickerFrame" },
+
 }
 
 -- For these frames the drag target is a child header element, not the frame
@@ -123,7 +114,7 @@ local EXTRA_DRAG_TARGETS = {
 -- module's strata/Raise writes too (see the `else` branch below), so
 -- dropping it here leaves it entirely to GroupFinder.lua, with nothing lost.
 local DOCKING_COMPANIONS = {
-    ItemUpgradeFrame = true,
+
     TransmogFrame = true,
     ItemSocketingFrame = true,
     MerchantFrame = true,
@@ -132,7 +123,6 @@ local DOCKING_COMPANIONS = {
     ProfessionsFrame = true,
     ProfessionsBookFrame = true,
     WorldMapFrame = true,
-    HousingDashboardFrame = true,
 }
 
 -------------------------------------------------------------------------------
@@ -734,9 +724,8 @@ local function HookFrame(frame, name)
 
     -- Re-assert the user's scale whenever Blizzard (or anything) changes it in
     -- place. Some windows rescale themselves on a state change with no
-    -- hide/show to fire the OnShow restore -- e.g. the crafting order window
-    -- resets its scale when you submit an order, so a scaled window snapped
-    -- back. Only re-assert for frames the user has actually scaled; guarded so
+    -- hide/show to fire the OnShow restore.
+    -- Only re-assert for frames the user has actually scaled; guarded so
     -- our own re-scale can't recurse.
     hooksecurefunc(frame, "SetScale", function()
         if not IsEnabled() then return end

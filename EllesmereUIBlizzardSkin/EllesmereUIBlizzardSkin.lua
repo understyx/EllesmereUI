@@ -30,22 +30,17 @@ local WINDOW_ENABLE_KEYS = {
     charsheet       = "themedCharacterSheet",
     inspect         = "themedInspectSheet",
     lfg             = "reskinLFGMenu",
-    greatvault      = "reskinGreatVault",
     collections     = "reskinCollections",
     playerspells    = "reskinPlayerSpells",
-    adventureguide  = "reskinAdventureGuide",
     professionsbook = "reskinProfessionsBook",
     guild           = "reskinGuild",
     calendar        = "reskinCalendar",
     achievements    = "reskinAchievements",
     mail            = "reskinMail",
-    catalyst        = "reskinCatalyst",
     socket          = "reskinSocket",
-    itemupgrade     = "reskinItemUpgrade",
     loot            = "reskinLoot",
     loottoast       = "reskinLootToast",
     micromenu       = "reskinMicroMenu",
-    housing         = "reskinHousing",
     professions     = "reskinProfessions",
     worldmap        = "reskinWorldMap",
     dressup         = "reskinDressUp",
@@ -60,7 +55,6 @@ local WINDOW_ENABLE_KEYS = {
     gossip          = "reskinGossip",
     quest           = "reskinQuest",
     inspectrecipe   = "reskinInspectRecipe",
-    delves          = "reskinDelves",
 }
 --- Master PER-PROFILE kill switch for ALL Blizzard window skinning: the
 --- window engine + every pack, plus the pre-engine CharacterSheet/Inspect,
@@ -121,7 +115,7 @@ end
     -- ONLY the game tooltip. reskinPopupsMenus is seeded from customTooltips once
     -- at login (see PLAYER_LOGIN) so existing users keep their state, then the two
     -- are independent. NOTE: the specific BLIZZARD WINDOW RESKINS (queue popup,
-    -- game menu, group finder, great vault) are independent of BOTH masters.
+    -- game menu, group finder) are independent of BOTH masters.
     local function _pmEnabled()
         return not EllesmereUIDB or EllesmereUIDB.reskinPopupsMenus ~= false
     end

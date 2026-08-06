@@ -55,11 +55,10 @@ initFrame:SetScript("OnEvent", function(self)
     if not EllesmereUIDB then EllesmereUIDB = {} end
     local p = db.profile
 
-    -- Default disabled categories: Housing and Quest Items off by default
+    -- Default disabled categories: Quest Items off by default
     if EllesmereUIDB.bagDisabledCategoriesSeeded == nil then
         EllesmereUIDB.bagDisabledCategoriesSeeded = true
         if not p.bagDisabledCategories then p.bagDisabledCategories = {} end
-        p.bagDisabledCategories["Housing"] = true
         p.bagDisabledCategories["Quest Items"] = true
     end
 
@@ -88,7 +87,6 @@ initFrame:SetScript("OnEvent", function(self)
                 "Reagent Bag",
                 "Miscellaneous",
                 "Quest Items",
-                "Housing",
             }
             -- Re-init categories with the new state
             if _G.EUI_CategoryManager then

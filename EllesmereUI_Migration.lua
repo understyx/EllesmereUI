@@ -2383,8 +2383,6 @@ EllesmereUI.RegisterMigration({
         qs._savedBarAlpha     = nil
         qs.combatHideEnabled  = false
         qs.combatShowEnabled  = false
-        qs.housingHideEnabled = false
-        qs.visHideHousing     = false
         qs.visOnlyInstances   = false
     end,
 })
@@ -3107,7 +3105,7 @@ EllesmereUI.RegisterMigration({
         local queueNotFalse = (db.reskinQueuePopup ~= false)
         if db.reskinPopupsMenus == nil then db.reskinPopupsMenus = master end
         if db.reskinQueuePopup  == nil then db.reskinQueuePopup  = master end
-        if db.reskinGreatVault  == nil then db.reskinGreatVault  = master end
+
         if db.reskinGameMenu    == nil then db.reskinGameMenu    = master and queueNotFalse end
         if db.reskinLFGMenu     == nil then db.reskinLFGMenu     = master and queueNotFalse end
     end,
@@ -4249,10 +4247,9 @@ end
 
 -- Per-character data leaked through shared profiles: DataBars kept its
 -- cross-character gold ledger at profile scope (addons.EllesmereUIDataBars
--- .characters) and the QoL upgrade calculator kept per-character scan state
--- there too (addons.EllesmereUIQoL.chars), so exported profiles carried the
--- sharer's character names, realms and gold. Both stores are account-wide now
--- (EllesmereUIDB.dataBarsGold / EllesmereUIDB.qolUpgradeCalcChars) and the
+-- .characters), so exported profiles carried the
+-- sharer's character names, realms and gold. This store is account-wide now
+-- (EllesmereUIDB.dataBarsGold) and the
 -- module init paths drop the keys from the ACTIVE profile; this sweep drops
 -- them from every stored profile so no stale copy lingers on disk or rides a
 -- later export. The string paths strip the keys as well, so this is cleanup,

@@ -127,8 +127,7 @@ local L = {
     OPEN_PROFESSION_BOOK = "Open Profession Book",
     START_CAMPFIRE       = "Start a Campfire",
     ACH_POINTS           = "Achievement Points",
-    DELVE_JOURNEY        = "Delver's Journey",
-    COMPANION_LEVEL      = "Companion Level",
+
     SELECT_CURRENCY      = "Select a currency",
     OPEN_SETTINGS        = "Open Settings",
     WHISPER              = "Whisper",
@@ -189,7 +188,6 @@ ns.BLOCK_TYPES = {
     { key = "travel",     label = "Travel Cooldowns" },
     { key = "micromenu",  label = "Micro Menu" },
     { key = "currency",   label = "Currency" },
-    { key = "greatvault", label = "Great Vault" },
     { key = "audio",      label = "Audio" },
     { key = "spacer",     label = "Spacer" },
 }
@@ -212,9 +210,8 @@ ns.BLOCK_DEFAULTS = {
     travel     = { randomizeHs = true },
     micromenu  = { disableBlizzardMicroMenu = false, hideSocialText = false, charStatsTooltip = false, socialTooltip = false, mainMenuSpacing = 4, iconSpacing = 2,
                    menu = true, guild = true, social = true, char = true, spell = true, ach = true, quest = true, lfg = true,
-                   pvp = true, housing = true, journal = true, pet = true, shop = true, help = true },
+                   pvp = true, journal = true, pet = true, shop = true, help = true },
     currency   = { currencyId = nil, showIcon = true },
-    greatvault = {},
     audio      = { channel = "master" },
     spacer     = {},
 }
@@ -2329,7 +2326,7 @@ end
 --  one enabled bar exists. Mouseover reveal goes through per-bar plain-table
 --  poll proxies (never EnableMouse on the real bar).
 -------------------------------------------------------------------------------
-ns.EDB_VIS_CAPS = { partyIncludesRaid = false, luaDragonriding = true }
+ns.EDB_VIS_CAPS = { partyIncludesRaid = false }
 
 -- Bar visibility = ALPHA ONLY, applied directly. A bar hosting a secure
 -- block (micromenu passthrough buttons, travel hearth) is an IMPLICITLY

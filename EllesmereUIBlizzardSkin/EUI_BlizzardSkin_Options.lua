@@ -4,7 +4,6 @@
 local _, ns = ...
 local PAGE_WINDOWSKINS   = "Blizzard Window Skins"
 local PAGE_TOOLTIPS      = "Tooltips, Menus & Popups"
-local PAGE_DRAGONRIDING  = "Dragon Riding"
 
 local initFrame = EllesmereUI.SafeCreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
@@ -889,14 +888,6 @@ initFrame:SetScript("OnEvent", function(self)
 
         local coreRow2
         coreRow2, h = W:DualRow(parent, y,
-            { type="toggle", text="Upgrade Track",
-              tooltip="Toggle visibility of upgrade track text on the character sheet.",
-              getValue=function() return EllesmereUIDB and EllesmereUIDB.showUpgradeTrack ~= false end,
-              setValue=function(v)
-                  if not EllesmereUIDB then EllesmereUIDB = {} end
-                  EllesmereUIDB.showUpgradeTrack = v
-                  if EllesmereUI._refreshUpgradeTrackVisibility then EllesmereUI._refreshUpgradeTrackVisibility() end
-              end },
             { type="toggle", text="Show Gems",
               tooltip="Toggle visibility of gem icons inside equipment slots.",
               getValue=function() return EllesmereUIDB and EllesmereUIDB.showGems ~= false end,
@@ -904,7 +895,8 @@ initFrame:SetScript("OnEvent", function(self)
                   if not EllesmereUIDB then EllesmereUIDB = {} end
                   EllesmereUIDB.showGems = v
                   if EllesmereUI._refreshGemsVisibility then EllesmereUI._refreshGemsVisibility() end
-              end }
+              end },
+            {}
         );  y = y - h
         AttachDisabledOverlay(coreRow2)
 
@@ -1194,18 +1186,7 @@ initFrame:SetScript("OnEvent", function(self)
                       EllesmereUI._refreshInspectItemLevelVisibility()
                   end
               end },
-            { type="toggle", text="Show Upgrade Track",
-              tooltip="Toggle visibility of upgrade track text on the inspect sheet.",
-              getValue=function()
-                  return EllesmereUIDB and EllesmereUIDB.inspectShowUpgradeTrack ~= false
-              end,
-              setValue=function(v)
-                  if not EllesmereUIDB then EllesmereUIDB = {} end
-                  EllesmereUIDB.inspectShowUpgradeTrack = v
-                  if EllesmereUI._refreshInspectUpgradeTrackVisibility then
-                      EllesmereUI._refreshInspectUpgradeTrackVisibility()
-                  end
-              end }
+            {}
         );  y = y - h
 
         do
@@ -1546,26 +1527,6 @@ initFrame:SetScript("OnEvent", function(self)
             buildContent = BuildLFGMenuContent,
         },
         {
-            key   = "greatvault",
-            title = "Great Vault",
-            desc  = "Weekly rewards window with custom tile backgrounds, progress colors, and completion states.",
-            reloadMsg = "Changing the Great Vault reskin requires a UI reload to fully swap between Blizzard and Ellesmere styles.",
-            setEnabled = function(v)
-                if not EllesmereUIDB then EllesmereUIDB = {} end
-                EllesmereUIDB.reskinGreatVault = v
-            end,
-        },
-        {
-            key   = "adventureguide",
-            title = "Adventure Guide",
-            desc  = "Encounter Journal: instance select, boss details, loot lists, and the bottom nav tabs.",
-            reloadMsg = "Changing the Adventure Guide reskin requires a UI reload to fully swap between Blizzard and Ellesmere styles.",
-            setEnabled = function(v)
-                if not EllesmereUIDB then EllesmereUIDB = {} end
-                EllesmereUIDB.reskinAdventureGuide = v
-            end,
-        },
-        {
             key   = "collections",
             title = "Collections",
             desc  = "Mounts, pets, toys, heirlooms, appearances, and campsites.",
@@ -1598,7 +1559,7 @@ initFrame:SetScript("OnEvent", function(self)
         {
             key   = "professions",
             title = "Profession Crafting",
-            desc  = "The profession crafting window: recipe list, schematic, specializations, and crafting orders.",
+            desc  = "The profession crafting window: recipe list, schematic, and specializations.",
             reloadMsg = "Changing the Profession Crafting reskin requires a UI reload to fully swap between Blizzard and Ellesmere styles.",
             setEnabled = function(v)
                 if not EllesmereUIDB then EllesmereUIDB = {} end
@@ -1655,16 +1616,7 @@ initFrame:SetScript("OnEvent", function(self)
                 EllesmereUIDB.reskinMail = v
             end,
         },
-        {
-            key   = "catalyst",
-            title = "Catalyst",
-            desc  = "The item conversion window (catalyst and similar kiosks).",
-            reloadMsg = "Changing the Catalyst reskin requires a UI reload to fully swap between Blizzard and Ellesmere styles.",
-            setEnabled = function(v)
-                if not EllesmereUIDB then EllesmereUIDB = {} end
-                EllesmereUIDB.reskinCatalyst = v
-            end,
-        },
+
         {
             key   = "socket",
             title = "Gem Socketing",
@@ -1675,16 +1627,7 @@ initFrame:SetScript("OnEvent", function(self)
                 EllesmereUIDB.reskinSocket = v
             end,
         },
-        {
-            key   = "itemupgrade",
-            title = "Item Upgrades",
-            desc  = "The item upgrade window: upgrade slot, track selector, cost, and the currency strip.",
-            reloadMsg = "Changing the Item Upgrades reskin requires a UI reload to fully swap between Blizzard and Ellesmere styles.",
-            setEnabled = function(v)
-                if not EllesmereUIDB then EllesmereUIDB = {} end
-                EllesmereUIDB.reskinItemUpgrade = v
-            end,
-        },
+
         {
             key   = "loot",
             title = "Loot Window",
@@ -1706,16 +1649,7 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             buildContent = BuildLootToastContent,
         },
-        {
-            key   = "housing",
-            title = "Housing Dashboard",
-            desc  = "The housing dashboard window background, border, and title bar.",
-            reloadMsg = "Changing the Housing Dashboard reskin requires a UI reload to fully swap between Blizzard and Ellesmere styles.",
-            setEnabled = function(v)
-                if not EllesmereUIDB then EllesmereUIDB = {} end
-                EllesmereUIDB.reskinHousing = v
-            end,
-        },
+
         {
             key   = "micromenu",
             title = "Micro Menu",
@@ -1798,16 +1732,6 @@ initFrame:SetScript("OnEvent", function(self)
             end,
         },
         {
-            key   = "craftorders",
-            title = "Crafting Orders",
-            desc  = "The customer crafting orders window: browse, order form, and my orders.",
-            reloadMsg = "Changing the Crafting Orders reskin requires a UI reload to fully swap between Blizzard and Ellesmere styles.",
-            setEnabled = function(v)
-                if not EllesmereUIDB then EllesmereUIDB = {} end
-                EllesmereUIDB.reskinCraftOrders = v
-            end,
-        },
-        {
             key   = "trainer",
             title = "Trainer",
             desc  = "The class and profession trainer window: skill list, train button, and cost display.",
@@ -1845,16 +1769,6 @@ initFrame:SetScript("OnEvent", function(self)
             setEnabled = function(v)
                 if not EllesmereUIDB then EllesmereUIDB = {} end
                 EllesmereUIDB.reskinInspectRecipe = v
-            end,
-        },
-        {
-            key   = "delves",
-            title = "Delves Companion",
-            desc  = "Brann's configuration window: role and trinket slots, abilities, and the ability list.",
-            reloadMsg = "Changing the Delves Companion reskin requires a UI reload to fully swap between Blizzard and Ellesmere styles.",
-            setEnabled = function(v)
-                if not EllesmereUIDB then EllesmereUIDB = {} end
-                EllesmereUIDB.reskinDelves = v
             end,
         },
     }
@@ -2390,270 +2304,11 @@ initFrame:SetScript("OnEvent", function(self)
         return math.abs(y)
     end
 
-    ---------------------------------------------------------------------------
-    --  Dragon Riding page
-    ---------------------------------------------------------------------------
-    local function EDR_DB()
-        return ns.edrDB and ns.edrDB.profile
-    end
-    local function EDR_Cfg(k) local p = EDR_DB(); return p and p[k] end
-    local function EDR_Set(k, v) local p = EDR_DB(); if p then p[k] = v end end
-    local function EDR_SetField(k, field, v)
-        local t = EDR_Cfg(k); if t then t[field] = v end
-    end
-    local function EDR_Rebuild() if ns.edrRebuild then ns.edrRebuild() end
-        if EllesmereUI.RefreshPage then EllesmereUI:RefreshPage() end
-    end
-    local function EDR_Redraw() if ns.edrRedraw then ns.edrRedraw() end end
-
-    -------------------------------------------------------------------
-    --  Bar texture dropdown tables (shared media path, same as ERB)
-    -------------------------------------------------------------------
-    local EDR_BAR_TEXTURES = ns.EDR_BAR_TEXTURES
-    local EDR_BAR_TEXTURE_ORDER = {
-        "none", "melli", "atrocity",
-        "fade", "fade-right",
-        "thin-line-top", "thin-line-bottom",
-        "beautiful", "plating",
-        "divide", "glass",
-        "gradient-lr", "gradient-rl", "gradient-bt", "gradient-tb",
-        "matte", "sheer",
-    }
-    local EDR_BAR_TEXTURE_NAMES = {
-        ["none"]        = "None",
-        ["melli"]       = "Melli (ElvUI)",
-        ["beautiful"]   = "Beautiful",
-        ["plating"]     = "Plating",
-        ["atrocity"]    = "Atrocity",
-        ["divide"]      = "Divide",
-        ["glass"]       = "Glass",
-        ["fade-right"]  = "Fade Right",
-        ["thin-line-top"]    = "Thin Line Top",
-        ["thin-line-bottom"] = "Thin Line Bottom",
-        ["fade"]        = "Fade",
-        ["gradient-lr"] = "Gradient Right",
-        ["gradient-rl"] = "Gradient Left",
-        ["gradient-bt"] = "Gradient Up",
-        ["gradient-tb"] = "Gradient Down",
-        ["matte"]       = "Matte",
-        ["sheer"]       = "Sheer",
-    }
-
-    local function BuildDragonRidingPage(pageName, parent, yOffset)
-        local W = EllesmereUI.Widgets
-        local y = yOffset
-        local _, h
-
-        if EllesmereUI.ClearContentHeader then EllesmereUI:ClearContentHeader() end
-        parent._showRowDivider = true
-
-        -- Append SharedMedia textures (safe to call multiple times)
-        if EllesmereUI.AppendSharedMediaTextures then
-            EllesmereUI.AppendSharedMediaTextures(
-                EDR_BAR_TEXTURE_NAMES,
-                EDR_BAR_TEXTURE_ORDER,
-                nil,
-                EDR_BAR_TEXTURES
-            )
-        end
-        local edrTexValues = {}
-        local edrTexOrder  = {}
-        for _, key in ipairs(EDR_BAR_TEXTURE_ORDER) do
-            if key ~= "---" then
-                edrTexValues[key] = EDR_BAR_TEXTURE_NAMES[key] or key
-                edrTexOrder[#edrTexOrder + 1] = key
-            end
-        end
-        edrTexValues._menuOpts = {
-            itemHeight = 28,
-            background = function(key) return EDR_BAR_TEXTURES[key] end,
-        }
-
-        local justifyValues = { LEFT = "Left", CENTER = "Center", RIGHT = "Right" }
-        local justifyOrder  = { "LEFT", "CENTER", "RIGHT" }
-
-        _, h = W:SectionHeader(parent, "GENERAL", y); y = y - h
-        _, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Enable Dragon Riding Bar",
-              getValue = function() return EDR_Cfg("enabled") == true end,
-              -- DependentSetValue: everything below Row 1 is hidden while the
-              -- bar is off; the flip forces the full rebuild.
-              setValue = EllesmereUI.DependentSetValue(
-                  function() return EDR_Cfg("enabled") == true end,
-                  function(v) EDR_Set("enabled", v); EDR_Rebuild() end) },
-            { type = "toggle", text = "Hide in Combat",
-              disabled = function() return EDR_Cfg("enabled") ~= true end,
-              disabledTooltip = "Dragon Riding Bar",
-              getValue = function() return EDR_Cfg("hideInCombat") == true end,
-              setValue = function(v) EDR_Set("hideInCombat", v); EDR_Rebuild() end }
-        ); y = y - h
-
-        -- Everything below Row 1 (the rest of GENERAL plus the LAYOUT and
-        -- SPEED BAR sections) is HIDDEN entirely while the bar is off.
-        if EDR_Cfg("enabled") == true then
-        _, h = W:DualRow(parent, y,
-            { type = "slider", text = "Width", min = 80, max = 600, step = 1,
-              getValue = function() return EDR_Cfg("width") end,
-              setValue = function(v) EDR_Set("width", v); EDR_Rebuild() end },
-            { type = "slider", pixel = true, text = "Element Spacing", min = 0, max = 12, step = 1,
-              getValue = function() return EDR_Cfg("gap") end,
-              setValue = function(v) EDR_Set("gap", v); EDR_Rebuild() end }
-        ); y = y - h
-        _, h = W:DualRow(parent, y,
-            { type = "slider", pixel = true, text = "Stack Spacing", min = 0, max = 10, step = 1,
-              getValue = function() return EDR_Cfg("stackSpacing") end,
-              setValue = function(v) EDR_Set("stackSpacing", v); EDR_Rebuild() end },
-            { type = "toggle", text = "Show Icon Cooldown Text",
-              getValue = function() return EDR_Cfg("whirlingSurgeText") and EDR_Cfg("whirlingSurgeText").enabled ~= false end,
-              setValue = function(v) EDR_SetField("whirlingSurgeText", "enabled", v); EDR_Redraw() end }
-        ); y = y - h
-        local borderRow
-        borderRow, h = W:DualRow(parent, y,
-            { type = "slider", text = "Border Size", min = 0, max = 4, step = 1,
-              getValue = function() return EDR_Cfg("borderThickness") or 0 end,
-              setValue = function(v) EDR_Set("borderThickness", v); EDR_Redraw() end },
-            { type = "dropdown", text = "Bar Texture",
-              values = edrTexValues, order = edrTexOrder,
-              getValue = function() return EDR_Cfg("barTexture") or "none" end,
-              setValue = function(v) EDR_Set("barTexture", v); EDR_Redraw() end }
-        ); y = y - h
-        do
-            local rgn = borderRow._leftRegion
-            local ctrl = rgn._control
-            local swatch, updateSwatch = EllesmereUI.BuildColorSwatch(
-                rgn, borderRow:GetFrameLevel() + 3,
-                function() local t = EDR_Cfg("borderColor"); return t.r, t.g, t.b, t.a end,
-                function(r, g, b, a) local p = EDR_Cfg("borderColor"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                true, 20)
-            EllesmereUI.PanelPP.Point(swatch, "RIGHT", ctrl, "LEFT", -8, 0)
-            EllesmereUI.RegisterWidgetRefresh(updateSwatch)
-        end
-        _, h = W:Spacer(parent, y, 20); y = y - h
-
-        _, h = W:SectionHeader(parent, "LAYOUT", y); y = y - h
-        _, h = W:DualRow(parent, y,
-            { type = "slider", text = "Charge Height", min = 2, max = 24, step = 1,
-              getValue = function() return EDR_Cfg("skyridingHeight") end,
-              setValue = function(v) EDR_Set("skyridingHeight", v); EDR_Rebuild() end },
-            { type = "multiSwatch", text = "Charge Color",
-              swatches = {
-                { text = "Background",
-                  getValue = function() local t = EDR_Cfg("skyridingBg"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("skyridingBg"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Background" },
-                { text = "Stacks",
-                  getValue = function() local t = EDR_Cfg("skyridingFilled"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("skyridingFilled"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Charges" },
-              } }
-        ); y = y - h
-        _, h = W:DualRow(parent, y,
-            { type = "slider", text = "Second Wind Height", min = 2, max = 24, step = 1,
-              getValue = function() return EDR_Cfg("secondWindHeight") end,
-              setValue = function(v) EDR_Set("secondWindHeight", v); EDR_Rebuild() end },
-            { type = "multiSwatch", text = "Second Wind Color",
-              swatches = {
-                { text = "Background",
-                  getValue = function() local t = EDR_Cfg("secondWindBg"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("secondWindBg"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Background" },
-                { text = "Second Wind",
-                  getValue = function() local t = EDR_Cfg("secondWindFilled"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("secondWindFilled"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Second Wind" },
-              } }
-        ); y = y - h
-        _, h = W:Spacer(parent, y, 20); y = y - h
-
-        _, h = W:SectionHeader(parent, "SPEED BAR", y); y = y - h
-        _, h = W:DualRow(parent, y,
-            { type = "slider", text = "Height", min = 4, max = 40, step = 1,
-              getValue = function() return EDR_Cfg("speedHeight") end,
-              setValue = function(v) EDR_Set("speedHeight", v); EDR_Rebuild() end },
-            { type = "toggle", text = "Thrill Color Change",
-              getValue = function() return EDR_Cfg("thrillColorToggle") == true end,
-              setValue = function(v) EDR_Set("thrillColorToggle", v); EDR_Redraw() end }
-        ); y = y - h
-        _, h = W:DualRow(parent, y,
-            { type = "multiSwatch", text = "Speed Color",
-              swatches = {
-                { text = "Background",
-                  getValue = function() local t = EDR_Cfg("speedBarBg"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("speedBarBg"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Background" },
-                { text = "Speed",
-                  getValue = function() local t = EDR_Cfg("normalColor"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("normalColor"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Speed" },
-              } },
-            { type = "multiSwatch", text = "Thrill Color",
-              swatches = {
-                { text = "Hash",
-                  getValue = function() local t = EDR_Cfg("tickColor"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("tickColor"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Hash Marker" },
-                { text = "Thrill",
-                  getValue = function() local t = EDR_Cfg("thrillColor"); return t.r, t.g, t.b, t.a end,
-                  setValue = function(r, g, b, a) local p = EDR_Cfg("thrillColor"); p.r, p.g, p.b, p.a = r, g, b, a; EDR_Redraw() end,
-                  hasAlpha = true,
-                  tooltip = "Thrill" },
-              } }
-        ); y = y - h
-        local speedTextRow
-        speedTextRow, h = W:DualRow(parent, y,
-            { type = "toggle", text = "Show Speed Text",
-              getValue = function() return EDR_Cfg("speedText") and EDR_Cfg("speedText").enabled ~= false end,
-              setValue = function(v) EDR_SetField("speedText", "enabled", v); EDR_Redraw() end },
-            { type = "dropdown", text = "Text Align",
-              values = justifyValues, order = justifyOrder,
-              getValue = function() return (EDR_Cfg("speedText") or {}).justify or "CENTER" end,
-              setValue = function(v) EDR_SetField("speedText", "justify", v); EDR_Redraw() end }
-        )
-        local _, cogShow = EllesmereUI.BuildCogPopup({
-            title = "Speed Text Position",
-            rows = {
-                { type = "slider", label = "Size",     min = 6,    max = 32,  step = 1,
-                  get = function() return (EDR_Cfg("speedText") or {}).size    or 12 end,
-                  set = function(v) EDR_SetField("speedText", "size",    v); EDR_Redraw() end },
-                { type = "slider", label = "Offset X", min = -200, max = 200, step = 1,
-                  get = function() return (EDR_Cfg("speedText") or {}).offsetX or 0  end,
-                  set = function(v) EDR_SetField("speedText", "offsetX", v); EDR_Redraw() end },
-                { type = "slider", label = "Offset Y", min = -200, max = 200, step = 1,
-                  get = function() return (EDR_Cfg("speedText") or {}).offsetY or 0  end,
-                  set = function(v) EDR_SetField("speedText", "offsetY", v); EDR_Redraw() end },
-            },
-        })
-        local cogBtn = EllesmereUI.SafeCreateFrame("Button", nil, speedTextRow._rightRegion)
-        cogBtn:SetSize(26, 26)
-        cogBtn:SetPoint("RIGHT", speedTextRow._rightRegion._lastInline or speedTextRow._rightRegion._control, "LEFT", -8, 0)
-        speedTextRow._rightRegion._lastInline = cogBtn
-        cogBtn:SetFrameLevel(speedTextRow._rightRegion:GetFrameLevel() + 5)
-        cogBtn:SetAlpha(0.4)
-        local cogTex = cogBtn:CreateTexture(nil, "OVERLAY"); cogTex:SetAllPoints(); cogTex:SetTexture(EllesmereUI.RESIZE_ICON)
-        cogBtn:SetScript("OnEnter", function(s) s:SetAlpha(0.7) end)
-        cogBtn:SetScript("OnLeave", function(s) s:SetAlpha(0.4) end)
-        cogBtn:SetScript("OnClick", function(s) cogShow(s) end)
-        y = y - h
-        _, h = W:Spacer(parent, y, 20); y = y - h
-        end   -- close Dragon Riding hidden-while-disabled gate
-
-        -- The wrapper is SetAllPoints-anchored, so SetHeight on it is inert;
-        -- return the measured height so the scroll range is correct.
-        return math.abs(y)
-    end
-
     EllesmereUI:RegisterModule("EllesmereUIBlizzardSkin", {
         title       = "Blizz UI Enhanced",
-        description = "Themed Blizzard frames: window skins, tooltips, menus, popups, Dragon Riding HUD.",
-        searchTerms = "blizzard skin character sheet tooltip menu popup dragon riding skyriding window skins lfg group finder premade queue pause game menu great vault inspect collections mounts pets toys spellbook talents adventure guide encounter journal professions guild communities calendar achievements mail catalyst gem socket item upgrade upgrades crest loot window loot toast you received popup micro menu modern delves companion brann",
-        pages       = { PAGE_WINDOWSKINS, PAGE_TOOLTIPS, PAGE_DRAGONRIDING },
+        description = "Themed Blizzard frames: window skins, tooltips, menus, popups.",
+        searchTerms = "blizzard skin character sheet tooltip menu popup window skins lfg group finder premade queue pause game menu inspect collections mounts pets toys spellbook talents encounter journal professions guild communities calendar achievements mail gem socket loot window loot toast you received popup micro menu modern",
+        pages       = { PAGE_WINDOWSKINS, PAGE_TOOLTIPS },
         buildPage   = function(pageName, parent, yOffset)
             if pageName == PAGE_WINDOWSKINS then
                 return BuildWindowSkinsPage(pageName, parent, yOffset)
@@ -2661,15 +2316,8 @@ initFrame:SetScript("OnEvent", function(self)
             if pageName == PAGE_TOOLTIPS then
                 return BuildTooltipsPage(pageName, parent, yOffset)
             end
-            if pageName == PAGE_DRAGONRIDING then
-                return BuildDragonRidingPage(pageName, parent, yOffset)
-            end
         end,
         onReset = function()
-            if EllesmereUIDragonRidingDB then
-                EllesmereUIDragonRidingDB.profiles = nil
-                EllesmereUIDragonRidingDB.profileKeys = nil
-            end
             -- Per-profile master kill switch: reset re-enables skins for the
             -- ACTIVE profile (other profiles keep their own choice).
             do
@@ -2725,7 +2373,6 @@ initFrame:SetScript("OnEvent", function(self)
                 -- to when tooltipBorderThickness is unset.
                 EllesmereUIDB.tooltipBorderSize = nil
                 if EllesmereUI.SyncAuraTooltipSkin then EllesmereUI.SyncAuraTooltipSkin() end
-                EllesmereUIDB.reskinGreatVault = nil
                 EllesmereUIDB.reskinLFGMenu = nil
                 EllesmereUIDB.showQueueTimer = nil
                 EllesmereUIDB.blizzWindowSkinStyles = nil
@@ -2736,20 +2383,17 @@ initFrame:SetScript("OnEvent", function(self)
                 EllesmereUIDB.blizzWinLinks = nil
                 EllesmereUIDB.reskinCollections = nil
                 EllesmereUIDB.reskinPlayerSpells = nil
-                EllesmereUIDB.reskinAdventureGuide = nil
                 EllesmereUIDB.reskinProfessionsBook = nil
                 EllesmereUIDB.reskinGuild = nil
                 EllesmereUIDB.reskinCalendar = nil
                 EllesmereUIDB.reskinAchievements = nil
                 EllesmereUIDB.reskinMail = nil
-                EllesmereUIDB.reskinCatalyst = nil
                 EllesmereUIDB.reskinSocket = nil
-                EllesmereUIDB.reskinItemUpgrade = nil
                 EllesmereUIDB.reskinLoot = nil
                 EllesmereUIDB.reskinLootToast = nil
                 EllesmereUIDB.lootToastQualityStrip = nil
                 EllesmereUIDB.reskinMicroMenu = nil
-                EllesmereUIDB.reskinHousing = nil
+                EllesmereUIDB.reskinProfessions = nil
                 EllesmereUIDB.reskinProfessions = nil
                 EllesmereUIDB.reskinWorldMap = nil
                 EllesmereUIDB.reskinDressUp = nil

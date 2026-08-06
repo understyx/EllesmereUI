@@ -389,8 +389,32 @@ if not C_SpellBook then
         if bank == "pet" or bank == 2 then
             bookType = "pet"
         end
-        local spellType, id = GetSpellBookItemType(index, bookType)
-        return spellType, id, id
+
+        -- Some 3.3.5 clients expose GetSpellBookItemInfo, while this client
+        -- does not.  Prefer whichever item-info API exists, then fall back to
+        -- the spellbook name/link APIs.  The link embeds the spell ID as
+        -- |Hspell:12345|h, which gives modern callers the ID they expect.
+        local getter = GetSpellBookItemInfo or GetSpellBookItemType
+        if getter then
+            local spellType, id = getter(index, bookType)
+            if spellType or id then return spellType, id, id end
+        end
+
+        local nameGetter = GetSpellBookItemName or GetSpellName
+        local name = nameGetter and nameGetter(index, bookType)
+        if not name then return nil end
+
+        local link
+        if GetSpellLink then
+            local ok, result = pcall(GetSpellLink, index, bookType)
+            if ok then link = result end
+            if not link then
+                ok, result = pcall(GetSpellLink, name)
+                if ok then link = result end
+            end
+        end
+        local id = type(link) == "string" and tonumber(link:match("|Hspell:(%d+)"))
+        return "SPELL", id or name, id
     end
 
     C_SpellBook.IsSpellInSpellBook = function(spell, bank)
@@ -701,7 +725,6 @@ Enum.ItemClass = {
     Quest = 12,
     Questitem = 12,
     Profession = 19,
-    Housing = 20,
 }
 
 Enum.ItemBind = {

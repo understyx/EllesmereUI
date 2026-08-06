@@ -181,7 +181,6 @@ local CHAT_DEFAULTS = {
             showGuild = false,
             showDurability = false,
             showCopy = true,
-            showPortals = true,
             showVoice = false,
             showSettings = true,
             showScroll = true,
@@ -205,9 +204,8 @@ local CHAT_DEFAULTS = {
             iconPositions = {},
             sidebarIconOrder = {
                 showCopy = 1,
-                showPortals = 2,
-                showVoice = 3,
-                showSettings = 4,
+                showVoice = 2,
+                showSettings = 3,
             },
             -- Session chat history (EllesmereUIChat_SessionHistory.lua, SavedVariablesPerCharacter)
             persistChatHistory = true,
@@ -832,7 +830,6 @@ function ECHAT.ApplySidebarIcons()
         showGuild      = { btn = "guildBtn",      tail = "guildCount" },
         showDurability = { btn = "durabilityBtn", tail = "durabilityPct" },
         showCopy       = { btn = "copyBtn" },
-        showPortals    = { btn = "portalBtn" },
         showVoice      = { btn = "voiceBtn" },
         showSettings   = { btn = "settingsBtn" },
     }
@@ -876,7 +873,6 @@ local SIDEBAR_ICON_REFS = {
     showGuild      = "guildBtn",
     showDurability = "durabilityBtn",
     showCopy       = "copyBtn",
-    showPortals    = "portalBtn",
     showVoice      = "voiceBtn",
     showSettings   = "settingsBtn",
     showScroll     = "scrollBtn",
@@ -889,11 +885,11 @@ local SIDEBAR_ICON_REFS = {
 -- Friends, Durability, then the middle group. Scroll is not part of the
 -- chain -- it stays pinned at the sidebar bottom.
 local SIDEBAR_CHAIN_KEYS = {
-    "showFriends", "showGuild", "showDurability", "showCopy", "showPortals", "showVoice", "showSettings",
+    "showFriends", "showGuild", "showDurability", "showCopy", "showVoice", "showSettings",
 }
 local SIDEBAR_FALLBACK_ORDER = {
     showFriends = -20, showGuild = -15, showDurability = -10,
-    showCopy = 1, showPortals = 2, showVoice = 3, showSettings = 4,
+    showCopy = 1, showVoice = 2, showSettings = 3,
 }
 
 -- Returns the chain-icon keys sorted into the user's saved order. Used by the
@@ -1044,13 +1040,13 @@ function ECHAT.ApplyIconColor()
     local d = CFD(cf1)
     local ICON_LABELS = {
         friendsBtn = "Friends", guildBtn = "Guild", durabilityBtn = "Durability", copyBtn = "Copy Chat",
-        portalBtn = "M+ Portals", voiceBtn = "Voice/Channels", settingsBtn = "Settings",
+        voiceBtn = "Voice/Channels", settingsBtn = "Settings",
         scrollBtn = "Scroll to Bottom",
     }
     local fc = d.friendsCount
     local gc = d.guildCount
     local dp = d.durabilityPct
-    for _, key in ipairs({ "friendsBtn", "guildBtn", "durabilityBtn", "copyBtn", "portalBtn", "voiceBtn", "settingsBtn", "scrollBtn" }) do
+    for _, key in ipairs({ "friendsBtn", "guildBtn", "durabilityBtn", "copyBtn", "voiceBtn", "settingsBtn", "scrollBtn" }) do
         local btn = CFD(cf1)[key]
         if btn and btn._icon then
             btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
@@ -1147,7 +1143,7 @@ function ECHAT.ApplySidebarIconScale()
     -- the free-move natural-position walk (TopYFromSidebarTop) never has to call
     -- GetHeight() -- a geometry resolve that can taint the Edit-Mode ChatFrame1.
     -- These are our own frames, so writing the field is safe.
-    for _, key in ipairs({ "durabilityBtn", "copyBtn", "portalBtn", "voiceBtn", "settingsBtn", "scrollBtn" }) do
+    for _, key in ipairs({ "durabilityBtn", "copyBtn", "voiceBtn", "settingsBtn", "scrollBtn" }) do
         local btn = CFD(cf1)[key]
         if btn then
             btn:SetSize(BASE_ICON * scale, BASE_ICON * scale)
@@ -1333,7 +1329,6 @@ function ECHAT.ApplyIconFreeMove()
         { ref = "guildBtn",      key = "guild" },
         { ref = "durabilityBtn", key = "durability" },
         { ref = "copyBtn",       key = "copy" },
-        { ref = "portalBtn",     key = "portals" },
         { ref = "voiceBtn",      key = "voice" },
         { ref = "settingsBtn",   key = "settings" },
         { ref = "scrollBtn",     key = "scroll" },
@@ -1364,361 +1359,7 @@ function ECHAT.ApplyIconFreeMove()
     end
 end
 
--- Portal flyout: dungeon portal spell buttons, built from the shared season
--- list (EllesmereUI.SEASON_PORTALS) -- one place to update per season.
-local PORTAL_SPELLS, PORTAL_SHORT = {}, {}
-for _, e in ipairs(EllesmereUI.SEASON_PORTALS) do
-    PORTAL_SPELLS[#PORTAL_SPELLS + 1] = e.spellID
-    PORTAL_SHORT[e.spellID] = e.short
-end
 
-local _portalFlyout, _portalBtns
-
-local function RefreshPortalButtons()
-    if not _portalBtns then return end
-    for _, btn in ipairs(_portalBtns) do
-        local spellID = btn.spellID
-        local known = IsPlayerSpell(spellID)
-        if btn._lastKnown ~= known then
-            btn._lastKnown = known
-            btn.icon:SetDesaturated(not known)
-            btn.icon:SetAlpha(known and 1 or 0.4)
-        end
-        if known then
-            local cdInfo = C_Spell.GetSpellCooldown(spellID)
-            if cdInfo and cdInfo.startTime and cdInfo.duration and cdInfo.duration > 0 then
-                btn.cooldown:SetCooldown(cdInfo.startTime, cdInfo.duration)
-            else
-                btn.cooldown:Clear()
-            end
-        else
-            btn.cooldown:Clear()
-        end
-    end
-end
-
-local function CreatePortalFlyout()
-    if _portalFlyout then return _portalFlyout end
-
-    local BTN_SIZE = 32
-    local SPACING = 1
-    local PADDING = 2
-    local COLS = 4
-    local ROWS = ceil(#PORTAL_SPELLS / COLS)
-
-    local portalW = PADDING * 2 + BTN_SIZE * COLS + SPACING * (COLS - 1)
-    local flyH = PADDING * 2 + BTN_SIZE * ROWS + SPACING * (ROWS - 1)
-    local HS_COUNT = 3
-    local HS_H = floor((flyH - PADDING * 2 - SPACING * (HS_COUNT - 1)) / HS_COUNT)
-    local hsX = PADDING + COLS * BTN_SIZE + (COLS - 1) * SPACING + SPACING
-    local flyW = hsX + HS_H + PADDING
-
-    local flyout = EllesmereUI.SafeCreateFrame("Frame", "EUIChatPortalFlyout", UIParent)
-    flyout:SetSize(flyW, flyH)
-    flyout:SetFrameStrata("DIALOG")
-    flyout:SetFrameLevel(100)
-    flyout:Hide()
-
-    local bg = flyout:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetTexture(BG_R, BG_G, BG_B, 0.95)
-
-    if PP and PP.CreateBorder then
-        PP.CreateBorder(flyout, 1, 1, 1, 0.06, 1, "OVERLAY", 7)
-    end
-
-    -- Close in combat
-    local guard = EllesmereUI.SafeCreateFrame("Frame")
-    guard:RegisterEvent("PLAYER_REGEN_DISABLED")
-    guard:SetScript("OnEvent", function()
-        flyout:Hide()
-    end)
-
-    -- Spell buttons
-    _portalBtns = {}
-    for i, spellID in ipairs(PORTAL_SPELLS) do
-        local col = (i - 1) % COLS
-        local row = floor((i - 1) / COLS)
-
-        local btn = EllesmereUI.SafeCreateFrame("Button", "EUIChatPortal" .. i, flyout, "SecureActionButtonTemplate")
-        btn:SetSize(BTN_SIZE, BTN_SIZE)
-        btn:SetPoint("TOPLEFT", flyout, "TOPLEFT",
-            PADDING + col * (BTN_SIZE + SPACING),
-            -(PADDING + row * (BTN_SIZE + SPACING)))
-
-        btn.spellID = spellID
-
-        local icon = btn:CreateTexture(nil, "ARTWORK")
-        icon:SetAllPoints()
-        icon:SetTexCoord(6/64, 58/64, 6/64, 58/64)
-        local spellInfo = C_Spell.GetSpellInfo(spellID)
-        if spellInfo then icon:SetTexture(spellInfo.iconID) end
-        btn.icon = icon
-
-        -- 1px black border
-        if PP and PP.CreateBorder then
-            PP.CreateBorder(btn, 0, 0, 0, 1, 1, "OVERLAY", 7)
-        end
-
-        local cd = EllesmereUI.SafeCreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
-        cd:SetAllPoints()
-        cd:SetHideCountdownNumbers(true)
-        cd:SetDrawSwipe(true)
-        cd:SetDrawBling(false)
-        cd:SetDrawEdge(false)
-        btn.cooldown = cd
-
-        local short = PORTAL_SHORT[spellID]
-        if short then
-            local labelFrame = EllesmereUI.SafeCreateFrame("Frame", nil, btn)
-            labelFrame:SetAllPoints()
-            labelFrame:SetFrameLevel(cd:GetFrameLevel() + 2)
-            local label = labelFrame:CreateFontString(nil, "OVERLAY", nil)
-            if EllesmereUI and EllesmereUI.PrimeFontShadow then EllesmereUI.PrimeFontShadow(label, true) end
-            label:SetFont(GetFont(), 8, (EUI.SlugFlag and EUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
-            label:SetPoint("BOTTOM", btn, "BOTTOM", 0, 2)
-            label:SetTextColor(1, 1, 1, 0.9)
-            label:SetText((EllesmereUI and EllesmereUI.L and EllesmereUI.L(short)) or short)
-        end
-
-        -- Hover highlight (HIGHLIGHT layer auto-shows on mouseover)
-        local hover = btn:CreateTexture(nil, "HIGHLIGHT")
-        hover:SetAllPoints()
-        hover:SetTexture(1, 1, 1, 0.20)
-
-        -- Casting highlight overlay
-        local castHL = btn:CreateTexture(nil, "OVERLAY", nil, 1)
-        castHL:SetAllPoints()
-        castHL:SetTexture(1, 1, 1, 0.4)
-        castHL:Hide()
-        btn._castHL = castHL
-
-        btn:RegisterForClicks("AnyUp", "AnyDown")
-        btn:SetAttribute("type", "spell")
-        btn:SetAttribute("spell", spellID)
-
-        btn:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetSpellByID(self.spellID)
-            GameTooltip:Show()
-        end)
-        btn:SetScript("OnLeave", function()
-            GameTooltip:Hide()
-        end)
-
-        _portalBtns[i] = btn
-    end
-
-    -- Hearthstone column: 3 icons stacked vertically as a 5th column
-    -- on the right side, separated by a thin vertical divider.
-    local _hearthBtns = {}
-    for i = 1, HS_COUNT do
-        local btn = EllesmereUI.SafeCreateFrame("Button", "EUIChatHearth" .. i, flyout, "SecureActionButtonTemplate")
-        btn:SetSize(HS_H, HS_H)
-        btn:SetPoint("TOPLEFT", flyout, "TOPLEFT",
-            hsX,
-            -(PADDING + (i - 1) * (HS_H + SPACING)))
-
-        local icon = btn:CreateTexture(nil, "ARTWORK")
-        icon:SetAllPoints()
-        icon:SetTexCoord(6/64, 58/64, 6/64, 58/64)
-        btn.icon = icon
-
-        if PP and PP.CreateBorder then
-            PP.CreateBorder(btn, 0, 0, 0, 1, 1, "OVERLAY", 7)
-        end
-
-        local cd = EllesmereUI.SafeCreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
-        cd:SetAllPoints()
-        cd:SetHideCountdownNumbers(true)
-        cd:SetDrawSwipe(true)
-        cd:SetDrawBling(false)
-        cd:SetDrawEdge(false)
-        btn.cooldown = cd
-
-        local hover = btn:CreateTexture(nil, "HIGHLIGHT")
-        hover:SetAllPoints()
-        hover:SetTexture(1, 1, 1, 0.20)
-
-        btn:RegisterForClicks("AnyUp", "AnyDown")
-
-        btn:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            if self._hsType == "spell" then
-                GameTooltip:SetSpellByID(self._hsID)
-            elseif self._hsType == "item" then
-                if self._hsID ~= 6948 and PlayerHasToy and PlayerHasToy(self._hsID) then
-                    GameTooltip:SetToyByItemID(self._hsID)
-                else
-                    GameTooltip:SetItemByID(self._hsID)
-                end
-            elseif self._hsType == "housing" then
-                GameTooltip:AddLine(EUI.L("Housing Dashboard"))
-            end
-            GameTooltip:Show()
-        end)
-        btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        -- Casting highlight overlay (same as portal buttons)
-        local castHL = btn:CreateTexture(nil, "OVERLAY", nil, 1)
-        castHL:SetAllPoints()
-        castHL:SetTexture(1, 1, 1, 0.4)
-        castHL:Hide()
-        btn._castHL = castHL
-
-        btn:HookScript("PostClick", function(self)
-            if self._hsType == "housing" then
-                if HousingFramesUtil and HousingFramesUtil.ToggleHousingDashboard then
-                    HousingFramesUtil.ToggleHousingDashboard()
-                end
-                if _portalFlyout then _portalFlyout:Hide() end
-            else
-                -- Show cast highlight immediately on click
-                self._castHL:Show()
-            end
-        end)
-
-        _hearthBtns[i] = btn
-    end
-
-
-    -- Cooldown-only refresh: updates swipes without re-resolving toys.
-    -- Called on SPELL_UPDATE_COOLDOWN events.
-    local function RefreshHearthCooldowns()
-        for _, btn in ipairs(_hearthBtns) do
-            local aType, id = btn._hsType, btn._hsID
-            if aType == "spell" and C_Spell and C_Spell.GetSpellCooldown then
-                local cdInfo = C_Spell.GetSpellCooldown(id)
-                if cdInfo and cdInfo.startTime and cdInfo.duration and cdInfo.duration > 0 then
-                    btn.cooldown:SetCooldown(cdInfo.startTime, cdInfo.duration)
-                else
-                    btn.cooldown:Clear()
-                end
-            elseif aType == "item" and GetItemCooldown then
-                local ok, start, dur = pcall(GetItemCooldown, id)
-                if ok and start and dur and dur > 0 then
-                    btn.cooldown:SetCooldown(start, dur)
-                else
-                    btn.cooldown:Clear()
-                end
-            else
-                btn.cooldown:Clear()
-            end
-        end
-    end
-
-    -- Full resolve: picks random toy, sets icon/macro/attributes.
-    -- Called once on Show only (not on cooldown events).
-    local function ResolveHearthButtons()
-        if InCombatLockdown() then return end
-        local EUI = EllesmereUI
-        local resolvers = {
-            EUI.ResolveHearthSlot,
-            EUI.ResolveDalaranSlot,
-            EUI.ResolveHousingSlot,
-        }
-        for i, btn in ipairs(_hearthBtns) do
-            local aType, id, iconTex = resolvers[i]()
-            btn._hsType = aType
-            btn._hsID = id
-            btn.icon:SetTexture(iconTex)
-            btn.icon:SetTexCoord(aType == "housing" and 0 or 6/64,
-                                 aType == "housing" and 1 or 58/64,
-                                 aType == "housing" and 0 or 6/64,
-                                 aType == "housing" and 1 or 58/64)
-            if aType == "housing" then
-                btn:SetAttribute("type", nil)
-                btn:SetAttribute("macrotext", nil)
-            elseif aType == "spell" then
-                btn:SetAttribute("type", "macro")
-                local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(id)
-                local name = info and info.name or ""
-                btn:SetAttribute("macrotext", "/cast " .. name)
-            else
-                btn:SetAttribute("type", "macro")
-                if id == 6948 then
-                    btn:SetAttribute("macrotext", "/use item:" .. id)
-                else
-                    local toyName
-                    if C_ToyBox and C_ToyBox.GetToyInfo then
-                        local _, tn = C_ToyBox.GetToyInfo(id)
-                        toyName = tn
-                    end
-                    btn:SetAttribute("macrotext", toyName and ("/use " .. toyName) or ("/use item:" .. id))
-                end
-            end
-        end
-        RefreshHearthCooldowns()
-    end
-
-    -- Cooldown + casting highlight refresh while visible
-    flyout:SetScript("OnShow", function(self)
-        self:RegisterEvent("SPELL_UPDATE_COOLDOWN")
-        self:RegisterEvent("UNIT_SPELLCAST_START")
-        self:RegisterEvent("UNIT_SPELLCAST_STOP")
-        self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-        self:RegisterEvent("UNIT_SPELLCAST_FAILED")
-        self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-        RefreshPortalButtons()
-        ResolveHearthButtons()
-    end)
-    flyout:SetScript("OnHide", function(self)
-        self:UnregisterAllEvents()
-        for _, btn in ipairs(_portalBtns) do
-            if btn._castHL then btn._castHL:Hide() end
-        end
-        for _, btn in ipairs(_hearthBtns) do
-            if btn._castHL then btn._castHL:Hide() end
-        end
-    end)
-    flyout:SetScript("OnEvent", function(self, event, unit, castGUID, spellID)
-        if event == "SPELL_UPDATE_COOLDOWN" then
-            RefreshPortalButtons()
-            RefreshHearthCooldowns()
-        elseif unit == "player" then
-            local casting = (event == "UNIT_SPELLCAST_START") and spellID or nil
-            for _, btn in ipairs(_portalBtns) do
-                if btn._castHL then
-                    if casting and casting == btn.spellID then btn._castHL:Show() else btn._castHL:Hide() end
-                end
-            end
-            -- Clear hearthstone cast highlights on cast end
-            if not casting then
-                for _, btn in ipairs(_hearthBtns) do
-                    if btn._castHL then btn._castHL:Hide() end
-                end
-            end
-        end
-    end)
-
-    -- Escape to close
-    EllesmereUI.RegisterEscapeClose(flyout)
-
-    _portalFlyout = flyout
-    return flyout
-end
-
-function ECHAT.TogglePortalFlyout(anchorBtn)
-    if InCombatLockdown() then return end
-    local flyout = CreatePortalFlyout()
-    if flyout:IsShown() then
-        flyout:Hide()
-    else
-        -- Compute absolute screen position (protected frame can't anchor to non-secure region)
-        local bs = anchorBtn:GetEffectiveScale()
-        local fs = flyout:GetEffectiveScale()
-        local bTop = anchorBtn:GetTop() * bs
-        local cfg = ECHAT.DB()
-        flyout:ClearAllPoints()
-        if cfg.sidebarRight then
-            local bLeft = anchorBtn:GetLeft() * bs
-            flyout:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", (bLeft - 4) / fs, (bTop + 4) / fs)
-        else
-            local bRight = anchorBtn:GetRight() * bs
-            flyout:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", (bRight + 4) / fs, (bTop + 4) / fs)
-        end
-        flyout:Show()
-    end
-end
 
 -- Flip edit box between bottom (default) and top of chat panel
 function ECHAT.ApplyInputPosition()
@@ -3333,7 +2974,7 @@ local function SkinChatFrame(cf)
         -- Chain icons are created below in the saved order (drag-to-reorder in
         -- the options dropdown; a new order takes effect on the next reload).
         local anchor = nil
-        local friendsBtn, friendsCount, durabilityBtn, durabilityPct, copyBtn, portalBtn, voiceBtn, settingsBtn
+        local friendsBtn, friendsCount, durabilityBtn, durabilityPct, copyBtn, voiceBtn, settingsBtn
         local guildBtn, guildCount
 
         local function ChainAnchor(btn)
@@ -3483,7 +3124,6 @@ local function SkinChatFrame(cf)
         }
         local MIDDLE_DEFS = {
             showCopy     = { tex = "chat_copy.tga" },
-            showPortals  = { tex = "chat_portal.tga", size = 26 },
             showVoice    = { tex = "chat_voice.tga" },
             showSettings = { tex = "chat_settings.tga" },
         }
@@ -3505,7 +3145,6 @@ local function SkinChatFrame(cf)
             end
         end
         copyBtn     = middleBtns["showCopy"]
-        portalBtn   = middleBtns["showPortals"]
         voiceBtn    = middleBtns["showVoice"]
         settingsBtn = middleBtns["showSettings"]
 
@@ -3570,15 +3209,6 @@ local function SkinChatFrame(cf)
         end)
         end
 
-        -- Portals button click handler
-
-        if portalBtn then
-        portalBtn:SetScript("OnClick", function(self)
-            if InCombatLockdown() then return end
-            ECHAT.TogglePortalFlyout(self)
-        end)
-        HookIconTooltip(portalBtn, "M+ Portals")
-        end
 
         -- Voice button toggles ChannelFrame
         if voiceBtn then
@@ -3621,7 +3251,7 @@ local function SkinChatFrame(cf)
         sbd.guildBtn = guildBtn
         sbd.durabilityBtn = durabilityBtn
         sbd.copyBtn = copyBtn
-        sbd.portalBtn = portalBtn
+
         sbd.voiceBtn = voiceBtn
         sbd.settingsBtn = settingsBtn
         sbd.scrollBtn = scrollBtn
@@ -4457,7 +4087,6 @@ initFrame:SetScript("OnEvent", function(self)
             if _sbd.friendsBtn then if _cfg.showFriends ~= false then _sbd.friendsBtn:Show() else _sbd.friendsBtn:Hide() end end
             if _sbd.durabilityBtn then if _cfg.showDurability ~= false then _sbd.durabilityBtn:Show() else _sbd.durabilityBtn:Hide() end end
             if _sbd.copyBtn then if _cfg.showCopy ~= false then _sbd.copyBtn:Show() else _sbd.copyBtn:Hide() end end
-            if _sbd.portalBtn then if _cfg.showPortals ~= false then _sbd.portalBtn:Show() else _sbd.portalBtn:Hide() end end
             if _sbd.voiceBtn then if _cfg.showVoice ~= false then _sbd.voiceBtn:Show() else _sbd.voiceBtn:Hide() end end
             if _sbd.settingsBtn then if _cfg.showSettings ~= false then _sbd.settingsBtn:Show() else _sbd.settingsBtn:Hide() end end
         end
@@ -4489,7 +4118,6 @@ initFrame:SetScript("OnEvent", function(self)
                 if _sbd.friendsBtn then if _cfg.showFriends ~= false then _sbd.friendsBtn:Show() else _sbd.friendsBtn:Hide() end end
                 if _sbd.durabilityBtn then if _cfg.showDurability ~= false then _sbd.durabilityBtn:Show() else _sbd.durabilityBtn:Hide() end end
                 if _sbd.copyBtn then if _cfg.showCopy ~= false then _sbd.copyBtn:Show() else _sbd.copyBtn:Hide() end end
-                if _sbd.portalBtn then if _cfg.showPortals ~= false then _sbd.portalBtn:Show() else _sbd.portalBtn:Hide() end end
                 if _sbd.voiceBtn then if _cfg.showVoice ~= false then _sbd.voiceBtn:Show() else _sbd.voiceBtn:Hide() end end
                 if _sbd.settingsBtn then if _cfg.showSettings ~= false then _sbd.settingsBtn:Show() else _sbd.settingsBtn:Hide() end end
             end

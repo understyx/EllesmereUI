@@ -159,7 +159,7 @@ local function ApplyBagScale()
     if EUI_BagsWindow then EUI_BagsWindow:SetScale(s) end
 end
 
-local GetUpgradeTrack = EUI.GetUpgradeTrack
+
 -- Locale-safe gear detection: GetItemInfo returns localized type strings
 -- ("Armor"/"Weapon" only on enUS). Use GetItemInfoInstant's numeric classID.
 local ITEM_CLASS_WEAPON = Enum.ItemClass.Weapon  -- 2
@@ -425,12 +425,7 @@ local function PreCacheSortFields(items)
             d._sortQuality = quality or 0
             d._sortIlvl = ilvl or 0
             d._sortType = itemType or ""
-            if GetUpgradeTrack and _trackRank then
-                local _, color = GetUpgradeTrack(d.itemLink)
-                d._sortTrackRank = color and _trackRank[color] or 0
-            else
-                d._sortTrackRank = 0
-            end
+            d._sortTrackRank = 0
             d._sortGear = d.categoryIndex and IsGearCategory(d.categoryIndex) or false
             if name then d._sortCached = true end
         end
@@ -1521,7 +1516,7 @@ local function ResetAllGoldData()
 end
 
 -------------------------------------------------------------------------------
---  Gold tooltip (custom multi-column, matches vault tooltip pattern)
+--  Gold tooltip (custom multi-column)
 -------------------------------------------------------------------------------
 local _goldTT
 local _goldTTRows = {}
@@ -5013,13 +5008,7 @@ function EUI_Bags:RefreshInventory()
                     -- Track rank + cooldown: only for types that need them
                     local isGear = IsGearItem(itemLink)
                     d._isGear = isGear
-                    if isGear and GetUpgradeTrack then
-                        local rankText, trackColor = GetUpgradeTrack(itemLink)
-                        if rankText and rankText ~= "" then
-                            d._giTrackRank = rankText
-                            d._giTrackColor = trackColor
-                        end
-                    end
+
                     -- Warbound check (for warbank dim overlay) + WuE bind check
                     -- (gear only, and only when the bind-type text is enabled)
                     local loc = ItemLocation:CreateFromBagAndSlot(bag, slot)

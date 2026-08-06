@@ -8045,7 +8045,7 @@ end
 --      getStore      = fn -> settings table (required)
 --      legacyKey     = "visibility" | "barVisibility" (required)
 --      caps          = { partyIncludesRaid, noMouseover, noGroupModes,
---                        luaDragonriding, lockedTooltips = { key = text } }
+--                        lockedTooltips = { key = text } }
 --      applyScalarFn = optional fn(store, mode) running the module's scalar
 --                      write side effects (Action Bars ApplyMode, Unit
 --                      Frames side-effect chain, ...)
@@ -8067,10 +8067,6 @@ EllesmereUI.VIS_MODE_ITEMS = {
       tooltip = "Combines with conditions: shows on hover only while they pass." },
     { key = "in_combat",     label = "In Combat" },
     { key = "out_of_combat", label = "Out of Combat" },
-    { key = "show_dragonriding",     label = "When Dragonriding",
-      tooltip = "Only while airborne on a skyriding mount." },
-    { key = "show_not_dragonriding", label = "When Not Dragonriding",
-      tooltip = "Whenever not airborne on a skyriding mount." },
     { key = "in_raid",  label = "In Raid Group" },
     { key = "in_party", label = "In Party" },
     { key = "solo",     label = "Solo" },
@@ -8105,10 +8101,7 @@ function EllesmereUI.BuildVisibilityModeRow(W, parent, y, opts, rightCfg)
                 item.lockedTooltip = (caps.lockedTooltips and caps.lockedTooltips[def.key])
                     or "This element cannot use group-based visibility."
             end
-            if caps.luaDragonriding and (def.key == "show_dragonriding" or def.key == "show_not_dragonriding") then
-                item.lockedFn = function() return not EllesmereUI._hasGlidingEvent end
-                item.lockedTooltip = "Requires a client with gliding events."
-            end
+
             items[#items + 1] = item
             listed[def.key] = true
         end

@@ -673,7 +673,14 @@ function ns.CC_GetClassSpells()
                     if spellType == Enum.SpellBookItemType.Spell then
                         local sid = spellId or actionId
                         if sid and not seen[sid] then
-                            local isPassive = C_Spell.IsSpellPassive and C_Spell.IsSpellPassive(sid)
+                            -- Wrath's IsPassiveSpell expects a spellbook slot,
+                            -- while modern C_Spell expects a spell ID.
+                            local isPassive
+                            if IS_WRATH and IsPassiveSpell then
+                                isPassive = IsPassiveSpell(si, bank)
+                            else
+                                isPassive = C_Spell.IsSpellPassive and C_Spell.IsSpellPassive(sid)
+                            end
                             if not isPassive then
                                 seen[sid] = true
                                 local name = C_Spell.GetSpellName and C_Spell.GetSpellName(sid)
@@ -2741,6 +2748,42 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
         local hoveredItem = nil
 
         local UpdateToggleQB
+        local function BindQuickbindItem(item, captured)
+            if not item or not captured then return end
+            local binding
+            if item.id then
+                binding = { type = "spell", spell = item.name, spellID = item.id,
+                    icon = item.icon, key = captured, enabled = true }
+            elseif item.macroName then
+                binding = { type = "macro", macroName = item.macroName,
+                    icon = item.icon, key = captured, enabled = true }
+            elseif item.itemSlot then
+                binding = { type = "item", itemSlot = item.itemSlot, itemName = item.name,
+                    icon = item.icon, key = captured, enabled = true }
+            end
+            if not binding then return end
+
+            ns.CC_AddSpecBinding(binding)
+            if item.macroName then boundMacros[item.macroName] = true
+            elseif item.itemSlot then boundItems[item.itemSlot] = true
+            else boundSpells[item.name or ""] = true end
+            UpdateToggleQB()
+            RebuildPage()
+        end
+
+        -- Capture on the popup instead of transferring keyboard ownership to
+        -- each hovered cell.  Legacy frames have no keyboard propagation API;
+        -- the compatibility fallback disables keyboard input when asked to
+        -- propagate a modifier, so the following key was never seen.  Keeping
+        -- one modal listener active makes plain and modified binds reliable.
+        popup:EnableKeyboard(true)
+        popup:SetScript("OnKeyDown", function(self, key)
+            self:SetPropagateKeyboardInput(false)
+            if key == "ESCAPE" then dimmer:Hide(); return end
+            if MODIFIER_KEYS[key] then return end
+            BindQuickbindItem(hoveredItem, ns.CC_CaptureKey(key))
+        end)
+
         local function PopulateGridQB(items3)
             for _, c2 in ipairs({gridChildQB:GetChildren()}) do c2:Hide(); c2:SetParent(nil) end
             hoveredItem = nil
@@ -2779,7 +2822,6 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
                 cell:SetSize(QB_CELL, rH3[r])
                 cell:SetPoint("TOPLEFT", gridChildQB, "TOPLEFT", cx, cy)
                 cell:RegisterForClicks("AnyUp")
-                cell:EnableKeyboard(false)
                 local iconFr = EllesmereUI.SafeCreateFrame("Frame", nil, cell); iconFr:SetSize(QB_ICON, QB_ICON)
                 local iconTx = iconFr:CreateTexture(nil, "ARTWORK"); iconTx:SetAllPoints()
                 iconTx:SetTexCoord(0.08, 0.92, 0.08, 0.92); iconTx:SetTexture(item.icon or QUESTION_MARK_ICON)
@@ -2803,66 +2845,17 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
                     iconBd:Show()
                     if cellLbl3 then cellLbl3:SetAlpha(1) end
                     hoveredItem = item
-                    cell:EnableKeyboard(true)
                 end)
                 cell:SetScript("OnLeave", function()
                     iconBd:Hide()
                     if cellLbl3 then cellLbl3:SetAlpha(dimmed3 and 0.3 or 0.7) end
-                    hoveredItem = nil
-                    cell:EnableKeyboard(false)
-                end)
-                -- Key press while hovering: bind this item to that key
-                cell:SetScript("OnKeyDown", function(self, key)
-                    if MODIFIER_KEYS[key] then self:SetPropagateKeyboardInput(true); return end
-                    if key == "ESCAPE" then self:SetPropagateKeyboardInput(false); dimmer:Hide(); return end
-                    self:SetPropagateKeyboardInput(false)
-                    local captured = ns.CC_CaptureKey(key)
-                    if not captured or not hoveredItem then return end
-                    local binding
-                    if hoveredItem.id then
-                        binding = { type = "spell", spell = hoveredItem.name, spellID = hoveredItem.id,
-                            icon = hoveredItem.icon, key = captured, enabled = true }
-                    elseif hoveredItem.macroName then
-                        binding = { type = "macro", macroName = hoveredItem.macroName,
-                            icon = hoveredItem.icon, key = captured, enabled = true }
-                    elseif hoveredItem.itemSlot then
-                        binding = { type = "item", itemSlot = hoveredItem.itemSlot, itemName = hoveredItem.name,
-                            icon = hoveredItem.icon, key = captured, enabled = true }
-                    end
-                    if binding then
-                        ns.CC_AddSpecBinding(binding)
-                        if hoveredItem.macroName then boundMacros[hoveredItem.macroName] = true
-                        elseif hoveredItem.itemSlot then boundItems[hoveredItem.itemSlot] = true
-                        else boundSpells[hoveredItem.name or ""] = true end
-                        UpdateToggleQB()
-                        RebuildPage()
-                    end
+                    if hoveredItem == item then hoveredItem = nil end
                 end)
                 -- Mouse click while hovering: bind with modifier+button
                 cell:SetScript("OnClick", function(self, button)
-                    if not hoveredItem then return end
                     local mods = GetModifierPrefix()
                     local normalized = MOUSE_BUTTON_MAP[button] or ("BUTTON" .. (button:match("%d+") or button))
-                    local captured = mods .. normalized
-                    local binding
-                    if hoveredItem.id then
-                        binding = { type = "spell", spell = hoveredItem.name, spellID = hoveredItem.id,
-                            icon = hoveredItem.icon, key = captured, enabled = true }
-                    elseif hoveredItem.macroName then
-                        binding = { type = "macro", macroName = hoveredItem.macroName,
-                            icon = hoveredItem.icon, key = captured, enabled = true }
-                    elseif hoveredItem.itemSlot then
-                        binding = { type = "item", itemSlot = hoveredItem.itemSlot, itemName = hoveredItem.name,
-                            icon = hoveredItem.icon, key = captured, enabled = true }
-                    end
-                    if binding then
-                        ns.CC_AddSpecBinding(binding)
-                        if hoveredItem.macroName then boundMacros[hoveredItem.macroName] = true
-                        elseif hoveredItem.itemSlot then boundItems[hoveredItem.itemSlot] = true
-                        else boundSpells[hoveredItem.name or ""] = true end
-                        UpdateToggleQB()
-                        RebuildPage()
-                    end
+                    BindQuickbindItem(item, mods .. normalized)
                 end)
             end
             gridChildQB:SetHeight(max(10, cY3))

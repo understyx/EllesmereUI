@@ -142,7 +142,6 @@ L["AuraBuff Reminders"] = "Promemoria aure"
 L["Quality of Life"]   = "Qualità della vita"
 L["Blizz UI Enhanced"] = "Interfaccia Blizz migliorata"
 L["Friends List"]      = "Lista amici"
-L["Mythic+ Timer"]     = "Timer Mitica+"
 L["Quest Tracker"]     = "Tracciamento missioni"
 L["Minimap"]           = "Minimappa"
 L["Chat"]              = true

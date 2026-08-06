@@ -475,10 +475,8 @@ for _, info in ipairs(BAR_CONFIG) do
         mouseoverAlpha = 1,
         combatShowEnabled = false,
         combatHideEnabled = false,
-        housingHideEnabled = false,
         barVisibility = "always",
         dragShow = false,
-        visHideHousing = false,
         visOnlyInstances = false,
         visHideMounted = false,
         visHideNoTarget = false,
@@ -550,7 +548,6 @@ for _, info in ipairs(EXTRA_BARS) do
         mouseoverAlpha = 1,
         combatShowEnabled = false,
         combatHideEnabled = false,
-        housingHideEnabled = false,
         alwaysHidden = false,
         mouseoverSpeed = 0.15,
         clickThrough = false,
@@ -6819,12 +6816,6 @@ local function BuildVisibilityString(info, s, visOverride)
                 conj = "combat,"
             elseif vis == "out_of_combat" then
                 conj = "nocombat,"
-            elseif vis == "show_dragonriding" then
-                -- [advflyable] is Dragonflight+ only; no-op in WotLK (always show)
-                conj = ""
-            elseif vis == "show_not_dragonriding" then
-                -- [advflyable] is Dragonflight+ only; no-op in WotLK (always show)
-                negGate = ""
             elseif s.combatShowEnabled then
                 conj = "combat,"
             elseif s.combatHideEnabled then
@@ -6873,14 +6864,6 @@ local function BuildVisibilityString(info, s, visOverride)
         return hidePrefix .. "[group:party,nogroup:raid] show; hide"
     elseif vis == "solo" then
         return hidePrefix .. "[nogroup] show; hide"
-    elseif vis == "show_dragonriding" then
-        -- [advflyable] is Dragonflight+ and doesn't exist in WotLK.
-        -- Fall through to always-show for this unsupported mode.
-        return hidePrefix .. "show"
-    elseif vis == "show_not_dragonriding" then
-        -- [advflyable] is Dragonflight+ and doesn't exist in WotLK.
-        -- Fall through to always-show for this unsupported mode.
-        return hidePrefix .. "show"
     end
     return hidePrefix .. "show"
 end
@@ -7142,14 +7125,13 @@ function EAB:_RefreshSoftTargetGate()
     --   _anyHideNoTarget -- any bar with "Hide when No Target" (soft-target
     --   override machinery: the 0.1s poll + ImmediateSoftTargetCheck).
     --   _anyNonMacroVis  -- any bar using ANY non-macro visibility option, or
-    --   a managed non-secure bar; when false, UpdateHousingVisibility has
-    --   nothing it could ever change and skips entirely.
+    --   a managed non-secure bar.
     local anySoft, anyNonMacro = false, false
     for _, info in ipairs(ALL_BARS) do
         local s = self.db.profile.bars[info.key]
         if s then
             if s.visHideNoTarget then anySoft = true end
-            if s.visHideNoTarget or s.visOnlyInstances or s.visHideHousing
+            if s.visHideNoTarget or s.visOnlyInstances
                or s.visHideMounted then
                 anyNonMacro = true
             end
@@ -7554,153 +7536,6 @@ function EAB:ApplyClickThroughForBar(barKey)
             end
         end
     end
-end
-
-function EAB:UpdateHousingVisibility()
-    -- Fully gated: when no bar uses a non-macro visibility option and no
-    -- managed non-secure bar exists, this sync has nothing it could change --
-    -- and it is invoked on every soft-target flip, which churns constantly
-    -- near NPCs. Flag maintained by _RefreshSoftTargetGate.
-    if not self._anyNonMacroVis then return end
-    -- Coalesced: an event burst schedules ONE deferred sync instead of a
-    -- fresh timer + closure per event.
-    if self._housingVisPending then return end
-    self._housingVisPending = true
-    -- Defer to next frame to avoid taint from secure execution paths
-    -- (e.g. CameraOrSelectOrMoveStop triggering PLAYER_MOUNT_DISPLAY_CHANGED)
-    C_Timer.After(0, function()
-        self._housingVisPending = nil
-        if InCombatLockdown() then return end
-        if _quickKeybindState.open then return end
-        -- Check non-macro visibility options here. Secure frames still use the
-        -- state driver for target/enemy conditions, but mounted-like druid
-        -- forms are also handled here to cover cases [mounted] does not match.
-        local function ShouldHideNonMacro(s)
-            if not s then return false end
-            if s.visHideNoTarget then
-                -- [noexists] in the state driver handles the basic
-                -- has-target check even in combat. Out of combat, we
-                -- additionally hide when a soft target is the only
-                -- "target". Macro conditionals treat soft-interact/
-                -- softenemy/softfriend as "target exists" but
-                -- UnitExists("target") does not, so check the soft
-                -- unit tokens directly.
-                if not UnitExists("target") and (UnitExists("softinteract") or UnitExists("softenemy") or UnitExists("softfriend")) then return true end
-            end
-            if s.visOnlyInstances then
-                local _, iType, diffID = GetInstanceInfo()
-                diffID = tonumber(diffID) or 0
-                local inInstance = false
-                if diffID > 0 then
-                    if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then
-                        inInstance = false
-                    elseif iType == "party" or iType == "raid" or iType == "scenario" or iType == "arena" or iType == "pvp" then
-                        inInstance = true
-                    end
-                end
-                if not inInstance then return true end
-            end
-            if s.visHideHousing then
-                if C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot() then
-                    return true
-                end
-            end
-            if s.visHideMounted then
-                -- Regular mounts are handled entirely by the secure "[mounted]
-                -- hide" clause in the state driver, which self-updates even in
-                -- combat -- so the bar reappears the instant the player is
-                -- dazed/knocked off a mount. Clobbering the driver with a
-                -- literal "hide" here would freeze it hidden until combat ends,
-                -- because this handler bails during InCombatLockdown and the
-                -- dismount event (PLAYER_MOUNT_DISPLAY_CHANGED) can no longer
-                -- re-evaluate a dead constant string. Only druid travel/flight
-                -- forms need this non-secure fallback, since [mounted] does not
-                -- match shapeshift forms.
-                if not (IsMounted and IsMounted())
-                    and EllesmereUI and EllesmereUI.IsPlayerMountedLike and EllesmereUI.IsPlayerMountedLike() then
-                    return true
-                end
-            end
-            return false
-        end
-
-        for _, info in ipairs(ALL_BARS) do
-            local key = info.key
-            local s = self.db.profile.bars[key]
-            if s then
-                if EAB_VTABLE.ExtraBars.IsManagedNonSecureBar(info) then
-                    EAB_VTABLE.ExtraBars.ApplyManagedNonSecureVisibility(info)
-                else
-                    local frame = barFrames[key] or (info.isDataBar and dataBarFrames[key]) or (info.isBlizzardMovable and blizzMovableHolders[key]) or (extraBarHolders[key]) or (info.visibilityOnly and _G[info.frameName])
-                if frame then
-                    -- Secure action bar frames use the state driver for
-                    -- target/enemy options; mounted-like druid forms are
-                    -- additionally handled in ShouldHideNonMacro().
-                    -- Non-secure frames (data bars, extra bars, visibility-only)
-                    -- need the full check since they have no state driver.
-                    local isSecure = not info.visibilityOnly and not info.isDataBar and not info.isBlizzardMovable and barFrames[key]
-                    local shouldHide = isSecure and ShouldHideNonMacro(s) or (not isSecure and EllesmereUI.CheckVisibilityOptions(s))
-                    -- Runtime "Toggle Action Bar" keybind override wins over the saved
-                    -- mode and the non-macro hide checks, exactly as RefreshRuntimeVisibility
-                    -- does. Without these two branches any event routed through here
-                    -- (target change, group/mount/housing) re-applies the saved visibility
-                    -- and re-shows a bar the player toggled off with its keybind. Secure
-                    -- managed bars only (the override is never set for other frame types).
-                    local _visToggleOv = isSecure and self._visOverride and self._visOverride[key]
-                    if _visToggleOv == "never" then
-                        if frame._eabLastVisStr ~= "hide" then
-                            frame._eabLastVisStr = "hide"
-                            RegisterAttributeDriver(frame, "state-visibility", "hide")
-                        end
-                    elseif _visToggleOv == "always" then
-                        local ovStr = BuildVisibilityString(info, s, "always")
-                        if frame._eabLastVisStr ~= ovStr then
-                            frame._eabLastVisStr = ovStr
-                            RegisterAttributeDriver(frame, "state-visibility", ovStr)
-                        end
-                    elseif shouldHide then
-                        if isSecure then
-                            if frame._eabLastVisStr ~= "hide" then
-
-                                frame._eabLastVisStr = "hide"
-                                RegisterAttributeDriver(frame, "state-visibility", "hide")
-                            end
-                        elseif info.blizzOwnedVisibility then
-                            local bf = _G[info.frameName]
-                            if bf then
-                                EFD(bf).visWasShown = bf:IsShown()
-                                bf:Hide()
-                            end
-                        else
-                            frame:Hide()
-                        end
-                    elseif not s.alwaysHidden and (s.barVisibility or "always") ~= "never" then
-                        if isSecure then
-                            local newStr = BuildVisibilityString(info, s)
-                            if frame._eabLastVisStr ~= newStr then
-
-                                frame._eabLastVisStr = newStr
-                                RegisterAttributeDriver(frame, "state-visibility", newStr)
-                            end
-                        elseif info.blizzOwnedVisibility then
-                            local bf = _G[info.frameName]
-                            if bf and EFD(bf).visWasShown then
-                                bf:Show()
-                            end
-                            if bf then EFD(bf).visWasShown = nil end
-                        elseif not info.isBlizzardMovable then
-                            frame:Show()
-                        end
-                        -- Data bars may need to re-hide (max level, max renown, etc.)
-                        if info.isDataBar and frame._updateFunc then
-                            frame._updateFunc()
-                        end
-                    end
-                end
-                end
-            end
-        end
-    end)
 end
 
 -------------------------------------------------------------------------------
@@ -8932,7 +8767,7 @@ end
 --  through the same explicit action slot as the displayed button. Native
 --  stance and pet buttons retain their native command routing.
 -------------------------------------------------------------------------------
-local _bindState = { housingCleared = false }
+local _bindState = {}
 
 -- Binding owner frame: single frame owns all override bindings so they can be
 -- cleared/reapplied as a unit. Bindings click the EAB secure buttons, ensuring
@@ -8954,16 +8789,6 @@ local _eabBindOwner = CreateFrame("Frame", "EAB_BindOwner", UIParent)
 -- actually changes.
 local function UpdateKeybinds()
     if InCombatLockdown() then return false end
-    -- While the house editor is active our override bindings are cleared so
-    -- Blizzard's housing hotkeys work (see Housing Editor Keybind Clearing).
-    -- The editor registers its OWN override bindings after ours are cleared,
-    -- and that registration fires UPDATE_BINDINGS -- which routes right back
-    -- here. Without this guard the rebuild re-applied all ~200 of our
-    -- overrides on top of the editor's, stomping the housing hotkeys until
-    -- the editor re-applied them on the next mode change. Rebuild resumes on
-    -- editor close (housingCleared reset -> UpdateKeybinds; sigValid stays
-    -- false while cleared, so that rebuild is never skipped).
-    if _bindState.housingCleared then return false end
     -- Pass 1: compute per-button routing signature (k1, k2, useClick, isPH)
     -- and compare against the last applied build.
     local sig = _bindState.sig
@@ -9199,36 +9024,7 @@ do
 end
 
 
--------------------------------------------------------------------------------
---  Housing Editor Keybind Clearing
---  When the house editor is active, clear our override bindings so Blizzard's
---  housing hotkeys work.  Restore them when the editor closes.
--------------------------------------------------------------------------------
-local _housingEventFrame = CreateFrame("Frame")
-local IsHouseEditorActive = C_HouseEditor and C_HouseEditor.IsHouseEditorActive
-if IsHouseEditorActive then
-    _housingEventFrame:RegisterEvent("HOUSE_EDITOR_MODE_CHANGED")
-    _housingEventFrame:SetScript("OnEvent", function()
-        if IsHouseEditorActive() then
-            -- House editor opened: clear ALL override bindings so housing hotkeys work
-            if _bindState.housingCleared then return end
-            _bindState.housingCleared = true
-            if not InCombatLockdown() then
-                ClearOverrideBindings(_eabBindOwner)
-                -- Bindings no longer match the cached signature; force the
-                -- next UpdateKeybinds to rebuild even if routing is identical.
-                _bindState.sigValid = false
-            end
-        else
-            -- House editor closed restore our override bindings
-            if not _bindState.housingCleared then return end
-            _bindState.housingCleared = false
-            if not InCombatLockdown() then
-                UpdateKeybinds()
-            end
-        end
-    end)
-end
+
 
 -------------------------------------------------------------------------------
 --  Grid Show/Hide (show empty slots during spell drag)
@@ -10913,18 +10709,12 @@ function EAB:FinishSetup()
             -- the flags should be false
             local inVehicle = (UnitInVehicle and UnitInVehicle("player"))
                               or EAB_VTABLE.HasVehicleActionBar()
-
-            local inHousing = IsHouseEditorActive and IsHouseEditorActive()
-            if not inHousing and _bindState.housingCleared then
-                _bindState.housingCleared = false
-            end
             UpdateKeybinds()
         end)
-        -- Re-evaluate visibility options (visOnlyInstances, visHideHousing,
+        -- Re-evaluate visibility options (visOnlyInstances,
         -- etc.) after every loading screen. ZONE_CHANGED_NEW_AREA alone is
         -- insufficient: it can fire before GetInstanceInfo() updates, and
         -- doesn't fire at all on /reload inside an instance.
-        self:UpdateHousingVisibility()
     end)
 
     local function QueueAlwaysShowButtonsRefresh()
@@ -10961,38 +10751,16 @@ function EAB:FinishSetup()
         end)
     end)
 
-    self:RegisterEvent("ZONE_CHANGED_NEW_AREA", function()
-        self:UpdateHousingVisibility()
-    end)
-
     -- Visibility option events: mounted, target, group changes
-    self:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED", function()
-        self:UpdateHousingVisibility()
-    end)
     self:RegisterEvent("UPDATE_SHAPESHIFT_FORM", function()
-        self:UpdateHousingVisibility()
         C_Timer_After(0, function()
             EAB_VTABLE.MainBarPageSync.ForceSecureActionSync()
         end)
     end)
-    -- Dragonriding visibility modes on the managed non-secure bars:
-    -- capability edge plus the airborne edge (probed at load in
-    -- EllesmereUI_Visibility.lua; the secure bars need neither -- their
-    -- state driver re-evaluates [advflyable,flying] natively).
-    self:RegisterEvent("PLAYER_CAN_GLIDE_CHANGED", function()
-        self:UpdateHousingVisibility()
-    end)
-    if EllesmereUI._hasGlidingEvent then
-        self:RegisterEvent("PLAYER_IS_GLIDING_CHANGED", function()
-            self:UpdateHousingVisibility()
-        end)
-    end
     -- Immediate soft-target override: when the only "target" is a soft-
     -- interact NPC (dialogue in view cone), the [noexists] state driver
     -- instantly shows the bar. Override to "hide" in the same frame so
-    -- the bar never visibly flashes. The deferred UpdateHousingVisibility
-    -- that follows handles the general case and will restore the normal
-    -- driver string when the soft target clears.
+    -- the bar never visibly flashes.
     local function ImmediateSoftTargetCheck()
         -- Fully gated (same flag the 0.1s poll already uses): without a
         -- "Hide when No Target" bar, the four UnitExists calls and the
@@ -11035,12 +10803,10 @@ function EAB:FinishSetup()
         -- wrongly see no hard target and keep the bar hidden. Run next frame.
         C_Timer.After(0, function()
             ImmediateSoftTargetCheck()
-            self:UpdateHousingVisibility()
         end)
     end)
     self:RegisterEvent("PLAYER_SOFT_INTERACT_CHANGED", function()
         ImmediateSoftTargetCheck()
-        self:UpdateHousingVisibility()
     end)
     local function RegisterIfValid(event, fn)
         if C_EventUtils and C_EventUtils.IsEventValid and C_EventUtils.IsEventValid(event) then
@@ -11049,14 +10815,9 @@ function EAB:FinishSetup()
     end
     RegisterIfValid("PLAYER_SOFT_ENEMY_CHANGED", function()
         ImmediateSoftTargetCheck()
-        self:UpdateHousingVisibility()
     end)
     RegisterIfValid("PLAYER_SOFT_FRIEND_CHANGED", function()
         ImmediateSoftTargetCheck()
-        self:UpdateHousingVisibility()
-    end)
-    self:RegisterEvent("GROUP_ROSTER_UPDATE", function()
-        self:UpdateHousingVisibility()
     end)
     -- Polling fallback: some soft-target transitions (notably Action Targeting
     -- walking into range) do not reliably fire the dedicated soft-target events
@@ -11079,12 +10840,11 @@ function EAB:FinishSetup()
         if i ~= lastI or e ~= lastE or fr ~= lastF or t ~= lastT then
             lastI, lastE, lastF, lastT = i, e, fr, t
             ImmediateSoftTargetCheck()
-            self:UpdateHousingVisibility()
         end
     end
     C_Timer.NewTicker(0.1, PollSoftTargetState)
     -- Combat exit: synchronously restore all visHideNoTarget bar state drivers.
-    -- During combat, ImmediateSoftTargetCheck and UpdateHousingVisibility are
+    -- During combat, ImmediateSoftTargetCheck is
     -- blocked by InCombatLockdown. If a bar's driver was overridden to "hide"
     -- (soft-target override) before combat started, it stays stuck the entire
     -- fight. The shared visibility dispatcher uses a double-deferred path that

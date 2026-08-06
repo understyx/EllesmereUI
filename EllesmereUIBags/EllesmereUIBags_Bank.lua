@@ -51,7 +51,7 @@ local function SetBankFont(fs, size)
     if EllesmereUI and EllesmereUI.PrimeFontShadow then EllesmereUI.PrimeFontShadow(fs, true) end
     fs:SetFont(GetFont(), size, GetOutline())
 end
-local GetUpgradeTrack = EUI.GetUpgradeTrack
+
 local ITEM_CLASS_WEAPON = Enum.ItemClass.Weapon
 local ITEM_CLASS_ARMOR  = Enum.ItemClass.Armor
 local function IsGearItem(itemLink)
@@ -1919,13 +1919,8 @@ function EUI_Bank:RefreshBank()
                 if showIlvl then
                     btn.ItemLevelText:SetText(giIlvl or "")
                     local r, g, b
-                    if GetUpgradeTrack then
-                        local rankText, trackColor = GetUpgradeTrack(itemLink)
-                        if BP().itemlevelUseCustomColor and BP().itemlevelCustomColor then
-                            r, g, b = BP().itemlevelCustomColor.r, BP().itemlevelCustomColor.g, BP().itemlevelCustomColor.b
-                        elseif rankText and rankText ~= "" and trackColor then
-                            r, g, b = trackColor.r, trackColor.g, trackColor.b
-                        end
+                    if BP().itemlevelUseCustomColor and BP().itemlevelCustomColor then
+                        r, g, b = BP().itemlevelCustomColor.r, BP().itemlevelCustomColor.g, BP().itemlevelCustomColor.b
                     end
                     if not r then
                         r, g, b = GetItemQualityColor(quality)

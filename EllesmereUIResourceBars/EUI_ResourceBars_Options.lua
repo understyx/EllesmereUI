@@ -7332,7 +7332,7 @@ initFrame:SetScript("OnEvent", function(self)
         visRow, h = EllesmereUI.BuildVisibilityModeRow(W, parent, y,
             { getStore = function() local p = DB(); return p and p.secondary end,
               legacyKey = "visibility",
-              caps = { partyIncludesRaid = false, luaDragonriding = true },
+              caps = { partyIncludesRaid = false },
               applyScalarFn = ApplyVisScalarAll,
               onChanged = function()
                   MirrorVisModes()

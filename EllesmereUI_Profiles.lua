@@ -64,15 +64,6 @@ local ADDON_DB_MAP = {
     -- user-visible profile data and listing it produced a misleading
     -- "Not included: Basics" warning on every imported v6.6+ profile.
     { folder = "EllesmereUIQoL",               display = "Quality of Life",     svName = "EllesmereUIQoLDB",               suffix = "QoL"               },
-    -- BlizzardSkin itself is excluded: it stores settings on the shared
-    -- EllesmereUIDB root, not through NewDB, so it has no per-profile data.
-    -- Dragon Riding is the one exception inside that addon -- it owns a real
-    -- per-profile DB (EllesmereUIDragonRidingDB) but ships as a file inside the
-    -- BlizzardSkin addon, so it is NOT a separately loadable addon. hostAddon
-    -- tells the loaded check (export strip + import/export checkboxes) to resolve
-    -- "installed?" through the BlizzardSkin folder instead of the (nonexistent)
-    -- EllesmereUIDragonRiding addon. Without this it would always be stripped.
-    { folder = "EllesmereUIDragonRiding",      display = "Dragon Riding",       svName = "EllesmereUIDragonRidingDB",      suffix = "DragonRiding",     hostAddon = "EllesmereUIBlizzardSkin" },
     { folder = "EllesmereUIBags",              display = "Bags",                svName = "EllesmereUIBagsDB",              suffix = "Bags"              },
     { folder = "EllesmereUIFriends",           display = "Friends List",        svName = "EllesmereUIFriendsDB",           suffix = "Friends"           },
     { folder = "EllesmereUIMythicTimer",       display = "Mythic+ Timer",       svName = "EllesmereUIMythicTimerDB",       suffix = "MythicTimer"       },
@@ -155,7 +146,6 @@ end
 -------------------------------------------------------------------------------
 local PRIVATE_ADDON_KEYS = {
     ["EllesmereUIDataBars"] = { "characters" },  -- gold ledger -> EllesmereUIDB.dataBarsGold
-    ["EllesmereUIQoL"]      = { "chars" },       -- upgrade calc -> EllesmereUIDB.qolUpgradeCalcChars
 }
 
 -- Strip account data from an addons table, in place. Accepts either keyspace
@@ -1269,9 +1259,7 @@ function EllesmereUI.ApplyProfileData(profileData)
                             mm.locationMode = mm.zoneInside and "inside" or "edge"
                         end
                     end
-                    if mm.omniumFolioMode == nil then
-                        mm.omniumFolioMode = (mm.showOmniumFolio == false) and "never" or "always"
-                    end
+
                 end
                 if db._profileDefaults then
                     EllesmereUI.Lite.DeepMergeDefaults(profile, db._profileDefaults)
@@ -1793,16 +1781,15 @@ do
     -- Window Skins tab: per-window enables + skin styles + shared look
     add({
         "themedCharacterSheet", "themedInspectSheet",
-        "reskinLFGMenu", "reskinGreatVault", "reskinCollections",
-        "reskinPlayerSpells", "reskinAdventureGuide", "reskinProfessionsBook",
+        "reskinLFGMenu", "reskinCollections",
+        "reskinPlayerSpells", "reskinProfessionsBook",
         "reskinProfessions", "reskinWorldMap", "reskinGuild", "reskinCalendar",
-        "reskinAchievements", "reskinMail", "reskinCatalyst", "reskinSocket",
-        "reskinItemUpgrade", "reskinLoot", "reskinLootToast", "lootToastQualityStrip",
-        "reskinMicroMenu", "reskinHousing", "reskinDressUp", "reskinTransmog",
+        "reskinAchievements", "reskinMail", "reskinSocket",
+        "reskinLoot", "reskinLootToast", "lootToastQualityStrip",
+        "reskinMicroMenu", "reskinDressUp", "reskinTransmog",
         "reskinMerchant", "reskinAuctionHouse", "reskinMacros",
         "reskinSettings", "reskinAddonList", "reskinCraftOrders",
         "reskinTrainer", "reskinGossip", "reskinQuest", "reskinInspectRecipe",
-        "reskinDelves",
         "blizzWindowSkinStyles", "blizzWindowModernDefault",
         "blizzWinAccentBar", "blizzWinBarFill", "blizzWinLinks",
     })
@@ -2074,14 +2061,13 @@ end
 --
 --  Excluded by design -- per-character data that is nobody else's:
 --    dataBarsGold         cross-character gold ledger
---    qolUpgradeCalcChars  Upgrade Calculator per-character cache
---  (The same two blobs PRIVATE_ADDON_KEYS strips from normal strings, at
---  their current top-level homes.)
+
+--  (The same blob PRIVATE_ADDON_KEYS strips from normal strings, at
+--  its current top-level home.)
 -------------------------------------------------------------------------------
 local FULL_EXPORT_TYPE = "fullaccount"
 local FULL_EXPORT_EXCLUDED = {
     dataBarsGold        = true,
-    qolUpgradeCalcChars = true,
 }
 
 --- Builds a full-account export string, or nil.

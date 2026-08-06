@@ -16745,7 +16745,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- matching the old VIS_VALUES_CDM list.
         local visRow, visH = EllesmereUI.BuildVisibilityModeRow(W, parent, y,
             { getStore = BD, legacyKey = "barVisibility",
-              caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
+              caps = { partyIncludesRaid = false, noMouseover = true },
               onChanged = function()
                   ns.CDMApplyVisibility()
               end },

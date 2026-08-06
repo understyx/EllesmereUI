@@ -6,7 +6,7 @@
 ## Author: Ellesmere
 ## Version: 8.6.4
 ## Dependencies: EllesmereUI
-## SavedVariables: EllesmereUIBlizzardSkinDB, EllesmereUIDragonRidingDB
+## SavedVariables: EllesmereUIBlizzardSkinDB
 ## IconTexture: Interface\AddOns\EllesmereUI\media\eg-logo.tga
 
 # Main Luas

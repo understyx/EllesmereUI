@@ -77,7 +77,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildVisibilityRow(W, parent, y, getCfg, refreshFn)
         local visRow, visH = EllesmereUI.BuildVisibilityModeRow(W, parent, y,
             { getStore = getCfg, legacyKey = "visibility",
-              caps = { partyIncludesRaid = false, luaDragonriding = true },
+              caps = { partyIncludesRaid = false },
               onChanged = function()
                   if refreshFn then refreshFn() end
                   if _G._EBS_UpdateVisibility then _G._EBS_UpdateVisibility() end

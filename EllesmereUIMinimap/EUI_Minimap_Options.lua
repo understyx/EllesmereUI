@@ -82,7 +82,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildVisibilityRow(W, parent, y, getCfg, refreshFn)
         local visRow, visH = EllesmereUI.BuildVisibilityModeRow(W, parent, y,
             { getStore = getCfg, legacyKey = "visibility",
-              caps = { partyIncludesRaid = false, luaDragonriding = true },
+              caps = { partyIncludesRaid = false },
               onChanged = function()
                   if refreshFn then refreshFn() end
                   if _G._EBS_UpdateVisibility then _G._EBS_UpdateVisibility() end
@@ -613,8 +613,8 @@ initFrame:SetScript("OnEvent", function(self)
               values = { __placeholder = "..." }, order = { "__placeholder" },
               getValue = function() return "__placeholder" end,
               setValue = function() end },
-            { type="toggle", text="Mouseover Extra Buttons",
-              tooltip="When enabled, the extra buttons (Great Vault, M+ Portals, Friends Online, Group Button) and any ungrouped minimap buttons only show while the mouse is over the minimap. The M+ Portals flyout keeps them shown until it closes.",
+              { type="toggle", text="Mouseover Extra Buttons",
+              tooltip="When enabled, the extra buttons (Friends Online, Group Button) and any ungrouped minimap buttons only show while the mouse is over the minimap.",
               getValue = function() local m = MinimapDB(); return m and m.mouseoverExtraBtns or false end,
               setValue = function(v) local m = MinimapDB(); if m then m.mouseoverExtraBtns = v; RefreshMinimap() end end }
         );  y = y - h
@@ -629,11 +629,9 @@ initFrame:SetScript("OnEvent", function(self)
             -- saved extraBtnOrder; the Group Button anchors the row and is
             -- checkbox-only.
             local EXTRA_BTN_LABELS = {
-                greatVault    = "Great Vault",
                 friendsOnline = "Friends Online",
-                portals       = "M+ Portals",
             }
-            local EXTRA_BTN_DEFAULT_ORDER = { "greatVault", "friendsOnline", "portals" }
+            local EXTRA_BTN_DEFAULT_ORDER = { "friendsOnline" }
             local function GetExtraBtnItems()
                 local m = MinimapDB()
                 local order = m and m.extraBtnOrder
@@ -686,22 +684,14 @@ initFrame:SetScript("OnEvent", function(self)
             EllesmereUI.RegisterWidgetRefresh(cbDDRefresh)
         end
 
-        -- M+ Portals Scale | Open Micro Menu on Middle Click
-        _, h = W:DualRow(parent, y,
-            { type="slider", text="M+ Portals Scale", min=0.5, max=2.0, step=0.01,
-              tooltip="Scales the M+ Portals flyout the portals button opens.",
-              getValue=function() local m = MinimapDB(); return m and m.extraFlyoutScale or 1.0 end,
-              setValue=function(v)
-                local m = MinimapDB(); if not m then return end
-                m.extraFlyoutScale = v
-              end },
-            { type="toggle", text="Open Micro Menu on Middle Click",
-              tooltip="Middle-click the minimap to open the EllesmereUI micro menu. When off, middle-click does nothing.",
-              getValue=function() local m = MinimapDB(); return m and m.openMicroMenuOnMiddleClick ~= false end,
-              setValue=function(v)
+        -- Open Micro Menu on Middle Click
+        _, h = W:Toggle(parent, "Open Micro Menu on Middle Click", y,
+            function() local m = MinimapDB(); return m and m.openMicroMenuOnMiddleClick ~= false end,
+            function(v)
                 local m = MinimapDB(); if not m then return end
                 m.openMicroMenuOnMiddleClick = v
-              end }
+            end,
+            "Middle-click the minimap to open the EllesmereUI micro menu. When off, middle-click does nothing."
         );  y = y - h
 
         -- Friends Tooltip Cap | Custom Tooltip Size
@@ -714,7 +704,7 @@ initFrame:SetScript("OnEvent", function(self)
                 m.friendsMaxRows = v
               end },
             { type="slider", text="Custom Tooltip Size", min=0.5, max=2.0, step=0.01,
-              tooltip="Scales the custom tooltips shown by the unique minimap buttons (Great Vault, friends, calendar, mail, tracking).",
+              tooltip="Scales the custom tooltips shown by the unique minimap buttons (friends, calendar, mail, tracking).",
               getValue=function() local m = MinimapDB(); return m and m.customTooltipScale or 1.0 end,
               setValue=function(v)
                 local m = MinimapDB(); if not m then return end
@@ -807,90 +797,12 @@ initFrame:SetScript("OnEvent", function(self)
         -- BLIZZARD ELEMENTS section header
         _, h = W:SectionHeader(parent, "BLIZZARD ELEMENTS", y);  y = y - h
 
-        -- Show Omnium Folio (expansion landing page button) | inline X/Y cog
-        -- Legacy fallback mirrors the runtime: pre-dropdown data carries the
-        -- showOmniumFolio toggle (default ON; only false is ever stored).
-        local function OmniumMode()
-            local m = MinimapDB()
-            if not m then return "always" end
-            if m.omniumFolioMode then return m.omniumFolioMode end
-            if m.showOmniumFolio == false then return "never" end
-            return "always"
-        end
-        local omniumRow
-        omniumRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="Show Omnium Folio",
-              tooltip="Show the expansion landing page (Omnium Folio) button on the minimap. Use the cog to choose its corner and nudge its position.",
-              values = { never = "Never", hover = "On Hover", always = "Always" },
-              order  = { "never", "hover", "always" },
-              getValue=OmniumMode,
-              setValue=function(v)
-                  local m = MinimapDB(); if not m then return end
-                  m.omniumFolioMode = v
-                  RefreshMinimap()
-                  EllesmereUI:RefreshPage()
-              end },
-            { type="slider", text="Omnium Folio Scale", min=0.5, max=1.5, step=0.05,
-              disabled=function() return OmniumMode() == "never" end,
-              disabledTooltip="Show Omnium Folio",
-              getValue=function() local m = MinimapDB(); return (m and m.omniumFolioScale) or 0.75 end,
-              setValue=function(v)
-                  local m = MinimapDB(); if not m then return end
-                  m.omniumFolioScale = v
-                  RefreshMinimap()
-              end });  y = y - h
-        do
-            local rgn = omniumRow._leftRegion
-            local function omniumOff() return OmniumMode() == "never" end
-            local _, cogShow = EllesmereUI.BuildCogPopup({
-                title = "Omnium Folio Position",
-                rows = {
-                    { type="dropdown", label="Corner",
-                      values={ ["BOTTOMLEFT"]="Bottom Left", ["BOTTOMRIGHT"]="Bottom Right", ["TOPLEFT"]="Top Left", ["TOPRIGHT"]="Top Right" },
-                      order={ "BOTTOMLEFT", "BOTTOMRIGHT", "TOPLEFT", "TOPRIGHT" },
-                      get=function() local m=MinimapDB(); return (m and m.omniumFolioCorner) or "BOTTOMLEFT" end,
-                      set=function(v) local m=MinimapDB(); if not m then return end m.omniumFolioCorner=v; RefreshMinimap() end },
-                    -- "X Offset" / "Y Offset" (not "X" / "Y"): labels under ~10px wide make
-                    -- BuildCogPopup fall back to a 60px label column, which left the old cog
-                    -- with a big gap before the sliders. Longer labels avoid that fallback.
-                    { type="slider", label="X Offset", min=-1000, max=1000, step=1,
-                      get=function() local m=MinimapDB(); return (m and m.omniumFolioX) or 0 end,
-                      set=function(v) local m=MinimapDB(); if not m then return end m.omniumFolioX=v; RefreshMinimap() end },
-                    { type="slider", label="Y Offset", min=-1000, max=1000, step=1,
-                      get=function() local m=MinimapDB(); return (m and m.omniumFolioY) or 0 end,
-                      set=function(v) local m=MinimapDB(); if not m then return end m.omniumFolioY=v; RefreshMinimap() end },
-                },
-            })
-            local cogBtn = EllesmereUI.SafeCreateFrame("Button", nil, rgn)
-            cogBtn:SetSize(26, 26)
-            cogBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = cogBtn
-            cogBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-            cogBtn:SetAlpha(omniumOff() and 0.15 or 0.4)
-            local cogTex = cogBtn:CreateTexture(nil, "OVERLAY")
-            cogTex:SetAllPoints()
-            cogTex:SetTexture(EllesmereUI.COGS_ICON)
-            cogBtn:SetScript("OnEnter", function(s) s:SetAlpha(0.7) end)
-            cogBtn:SetScript("OnLeave", function(s) s:SetAlpha(omniumOff() and 0.15 or 0.4) end)
-            cogBtn:SetScript("OnClick", function(s) cogShow(s) end)
-            local cogBlock = EllesmereUI.SafeCreateFrame("Frame", nil, cogBtn)
-            cogBlock:SetAllPoints(); cogBlock:SetFrameLevel(cogBtn:GetFrameLevel() + 10); cogBlock:EnableMouse(true)
-            cogBlock:SetScript("OnEnter", function() EllesmereUI.ShowWidgetTooltip(cogBtn, EllesmereUI.DisabledTooltip("Show Omnium Folio")) end)
-            cogBlock:SetScript("OnLeave", function() EllesmereUI.HideWidgetTooltip() end)
-            EllesmereUI.RegisterWidgetRefresh(function()
-                local off = omniumOff()
-                cogBtn:SetAlpha(off and 0.15 or 0.4)
-                if off then cogBlock:Show() else cogBlock:Hide() end
-            end)
-            if omniumOff() then cogBlock:Show() else cogBlock:Hide() end
-        end
 
         -- Show Blizzard Elements | Scroll to Zoom
         local blizzElements = {
             { key = "calendar",   label = "Calendar",       hideKey = "hideGameTime" },
             { key = "mail",       label = "Mail",           hideKey = "hideMail" },
             { key = "tracking",   label = "Tracking",       hideKey = "hideTrackingButton" },
-            { key = "crafting",   label = "Crafting Order", hideKey = "hideCraftingOrder" },
             { key = "difficulty", label = "Difficulty",      hideKey = "hideRaidDifficulty",
               -- Overridden while the difficulty shows as text (Text section)
               lockedFn = function() local m = MinimapDB(); return (m and m.diffTextEnabled) or false end },
@@ -1553,8 +1465,8 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         -- Show on FPS/MS Hover | Show on Clock Hover
-        local HOVER_TT_VALUES = { none = "None", lockouts = "Instance Lockouts", vault = "Great Vault" }
-        local HOVER_TT_ORDER = { "none", "lockouts", "vault" }
+        local HOVER_TT_VALUES = { none = "None", lockouts = "Instance Lockouts" }
+        local HOVER_TT_ORDER = { "none", "lockouts" }
         _, h = W:DualRow(parent, y,
             { type="dropdown", text="Show on FPS/MS Hover",
               values = HOVER_TT_VALUES, order = HOVER_TT_ORDER,

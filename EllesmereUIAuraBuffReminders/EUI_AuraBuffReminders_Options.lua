@@ -804,7 +804,7 @@ initFrame:SetScript("OnEvent", function(self)
         threshRow, h = W:DualRow(parent, y,
             { type="slider", text="Party: Show Consumes Below", min=0, max=60, step=1,
               trackWidth=120,
-              tooltip="In Mythic Dungeons, show consumables reminders\nwhen the remaining buff time is less than this amount",
+              tooltip="In Dungeons, show consumables reminders\nwhen the remaining buff time is less than this amount",
               getValue=function() local d = DDB(); return d and d.showUnderDurationDungeon or 0 end,
               setValue=function(v)
                   local d = DDB(); if not d then return end; d.showUnderDurationDungeon = v

@@ -275,27 +275,7 @@ local LOCALE_FONT_FALLBACK = _G.EllesmereUI and _G.EllesmereUI._localeFont or ni
 local ICONS_PATH    = MEDIA_PATH .. "icons\\"
 
 -------------------------------------------------------------------------------
---  Season M+ Portals -- single source of truth for every portal/teleport
---  list in the suite (Chat sidebar flyout, Minimap flyout, QoL /keys name
---  resolver, DataBars travel tooltip). Update ONCE here each season.
---    spellID     - primary teleport spell id
---    short       - abbreviated label used by the flyout buttons
---    dungeonID   - LFG dungeonID (GetLFGDungeonInfo name lookup)
---    names       - lowercase dungeon names (plus localized aliases) for
---                  name -> spell resolution
---    altSpellIDs - optional variant teleport spell ids
---  Order = flyout grid order (top-left to bottom-right).
--------------------------------------------------------------------------------
-EllesmereUI.SEASON_PORTALS = {
-    { spellID = 1254400, short = "WRS", dungeonID = 2739, names = { "windrunner spire", "шпиль ветрокрылых" } },
-    { spellID = 1254572, short = "MT",  dungeonID = 3085, names = { "magisters' terrace", "терраса магистров" } },
-    { spellID = 1254563, short = "NPX", dungeonID = 3056, names = { "nexus-point xenas", "нексус-пойнт ксенас", "нексус-поинт ксенас" } },
-    { spellID = 1254559, short = "MC",  dungeonID = 3097, names = { "maisara caverns", "пещеры майсара" } },
-    { spellID = 159898,  short = "SR",  dungeonID = 779,  altSpellIDs = { 1254557 }, names = { "skyreach", "небесный путь" } },
-    { spellID = 1254555, short = "PoS", dungeonID = 3113, names = { "pit of saron", "яма сарона" } },
-    { spellID = 1254551, short = "SoT", dungeonID = 3118, names = { "seat of the triumvirate", "престол триумвирата" } },
-    { spellID = 393273,  short = "AA",  dungeonID = 2366, names = { "algeth'ar academy", "академия алгет'ар", "академия алгетар" } },
-}
+
 
 local ADDON_ROSTER = {
     { folder = "EllesmereUIActionBars",        display = "Action Bars",          search_name = "EllesmereUI Action Bars"             },
@@ -309,9 +289,9 @@ local ADDON_ROSTER = {
     -- the per-module addons below. The Basics folder still exists as a shim
     -- addon purely so the v6.6 split-migration can read its enable state.
     { folder = "EllesmereUIQoL",               display = "Quality of Life",      search_name = "EllesmereUI Quality of Life"         },
-    { folder = "EllesmereUIBlizzardSkin",      display = "Blizz UI Enhanced",    search_name = "EllesmereUI Blizz UI Enhanced",      syncFolder = "EllesmereUIDragonRiding", syncDisplay = "Dragon Riding" },
+    { folder = "EllesmereUIBlizzardSkin",      display = "Blizz UI Enhanced",    search_name = "EllesmereUI Blizz UI Enhanced"       },
     { folder = "EllesmereUIFriends",           display = "Friends List",         search_name = "EllesmereUI Friends List"            },
-    { folder = "EllesmereUIMythicTimer",       display = "Mythic+ Timer",        search_name = "EllesmereUI Mythic+ Timer"           },
+
     { folder = "EllesmereUIQuestTracker",      display = "Quest Tracker",        search_name = "EllesmereUI Quest Tracker"           },
     { folder = "EllesmereUIMinimap",           display = "Minimap",              search_name = "EllesmereUI Minimap"                 },
     { folder = "EllesmereUIChat",              display = "Chat",                 search_name = "EllesmereUI Chat"                    },
@@ -360,7 +340,7 @@ EllesmereUI.ADDON_GROUPS = {
         members = {
             "EllesmereUIBlizzardSkin",
             "EllesmereUIDamageMeters",
-            "EllesmereUIMythicTimer",
+
             "EllesmereUIQuestTracker",
             "EllesmereUIFriends",
             "EllesmereUIMinimap",
@@ -440,9 +420,6 @@ do
     EllesmereUI._syncExempt = SYNC_EXEMPT
 
     -- Modules that show a sync icon but have no per-profile data (always "synced").
-    -- (BlizzardSkin used to live here; it now hosts Dragon Riding's per-profile DB,
-    -- so its sidebar sync icon routes to the EllesmereUIDragonRiding folder via the
-    -- roster entry's syncFolder -- see the sidebar sync-icon builder.)
     local SYNC_GLOBAL_ONLY = {}
     EllesmereUI._syncGlobalOnly = SYNC_GLOBAL_ONLY
 
@@ -921,17 +898,9 @@ EllesmereUI.RegisterSyncExclusions("EllesmereUIRaidFrames", {
     "unlockPos",
 })
 
-EllesmereUI.RegisterSyncExclusions("EllesmereUIMythicTimer", {
-    "standalonePos",
-    "scale",
-    "frameWidth",
-})
 
--- Dragon Riding stores its HUD position in its own profile blob (unlockPos).
--- Keep each profile's placement when syncing, matching every other module.
-EllesmereUI.RegisterSyncExclusions("EllesmereUIDragonRiding", {
-    "unlockPos",
-})
+
+
 
 -- Secondary Stats + FPS counter live in the QoL profile blob. Their on-screen
 -- positions stay per-profile on sync (still exported intact, just never
@@ -1192,7 +1161,7 @@ do
             EllesmereUIUnitFrames = true,
             EllesmereUICooldownManager = true,
             EllesmereUIResourceBars = true,
-            EllesmereUIMythicTimer = true,
+
             EllesmereUIRaidFrames = true,
         }
         local hasWarning = WARN_MODULES[folder]
@@ -1897,9 +1866,9 @@ do
 
         -- Locale-agnostic track color lookup (all known localized trackString values)
         local map = {
-            -- Explorer / Delve (gray)
+            -- Explorer (gray)
             Explorer = GR, Expedicionario = GR, Forscher = GR,
-            Explorateur = GR, Esploratore = GR, Explorador = GR, Delve = GR,
+            Explorateur = GR, Esploratore = GR, Explorador = GR,
             -- Adventurer (white)
             Adventurer = W, Aventurero = W, Abenteurer = W,
             Aventurier = W, Avventuriero = W, Aventureiro = W,
@@ -1933,17 +1902,6 @@ do
             ["\231\178\190\229\133\181"] = VE, ["\231\165\158\232\169\177"] = MY,
         }
 
-        function EllesmereUI.GetUpgradeTrack(itemLink)
-            if not itemLink or not (C_Item and C_Item.GetItemUpgradeInfo) then
-                return "", W
-            end
-            local info = C_Item.GetItemUpgradeInfo(itemLink)
-            if not info then return "", W end
-            local cur, maxL = info.currentLevel, info.maxLevel
-            local text = (cur and maxL and maxL > 0) and (cur .. "/" .. maxL) or ""
-            local color = map[info.trackString or ""] or W
-            return text, color
-        end
 
         -- Resolve the item-level text color using the exact same precedence as
         -- the character-sheet slot labels: custom override > upgrade-track hue >
@@ -1954,10 +1912,7 @@ do
                 and EllesmereUIDB.charSheetItemLevelColor then
                 return EllesmereUIDB.charSheetItemLevelColor
             end
-            local upgradeText, upgradeColor = EllesmereUI.GetUpgradeTrack(itemLink)
-            if upgradeText and upgradeText ~= "" and upgradeColor then
-                return upgradeColor
-            end
+
             if (not EllesmereUIDB or EllesmereUIDB.charSheetColorItemLevel ~= false) and itemQuality then
                 local r, g, b = GetItemQualityColor(itemQuality)
                 return { r = r, g = g, b = b }
@@ -3916,7 +3871,7 @@ EllesmereUI._addonKeyToFolder = {
     minimap      = "EllesmereUIMinimap",
     chat         = "EllesmereUIChat",
     questTracker = "EllesmereUIQuestTracker",
-    mythicTimer  = "EllesmereUIMythicTimer",
+
     blizzardSkin = "EllesmereUIBlizzardSkin",
     damageMeters = "EllesmereUIDamageMeters",
     dataBars     = "EllesmereUIDataBars",
@@ -5323,148 +5278,6 @@ EllesmereUI.EXPRESSWAY = LOCALE_FONT_FALLBACK or EXPRESSWAY
 EllesmereUI.MEDIA_PATH = MEDIA_PATH
 EllesmereUI.ICONS_PATH = ICONS_PATH
 
--------------------------------------------------------------------------------
---  Portal flyout hearthstone row: shared resolution logic.
---  Called lazily from chat + minimap portal flyouts on Show only.
--------------------------------------------------------------------------------
-do
-    local HEARTH_TOYS = {
-        54452,  -- Ethereal Portal
-        64488,  -- The Innkeeper's Daughter
-        93672,  -- Dark Portal
-        28585,  -- Ruby Slippers
-        142542, -- Tome of Town Portal
-        163045, -- Headless Horseman's Hearthstone
-        162973, -- Greatfather Winter's Hearthstone
-        165669, -- Lunar Elder's Hearthstone
-        165670, -- Peddlefeet's Lovely Hearthstone
-        165802, -- Noble Gardener's Hearthstone
-        166746, -- Fire Eater's Hearthstone
-        166747, -- Brewfest Reveler's Hearthstone
-        168907, -- Holographic Digitalization Hearthstone
-        172179, -- Eternal Traveler's Hearthstone
-        184353, -- Kyrian Hearthstone
-        180290, -- Night Fae Hearthstone
-        182773, -- Necrolord Hearthstone
-        183716, -- Venthyr Sinstone
-        188952, -- Dominated Hearthstone
-        190237, -- Broker Translocation Matrix
-        190196, -- Enlightened Hearthstone
-        193588, -- Timewalker's Hearthstone
-        200630, -- Ohn'ir Windsage's Hearthstone
-        206195, -- Path of the Naaru
-        209035, -- Hearthstone of the Flame
-        210455, -- Draenic Hologem
-        208704, -- Deepdweller's Earthen Hearthstone
-        212337, -- Stone of the Hearth
-        228940, -- Notorious Thread's Hearthstone
-        235016, -- Redeployment Module
-        236687, -- Explosive Hearthstone
-        245970, -- P.O.S.T. Master's Express Hearthstone
-        246565, -- Cosmic Hearthstone
-        250411, -- Timerunner's Hearthstone
-        257736, -- Lightcalled Hearthstone
-        263489, -- Naaru's Enfold
-        263933, -- Preyseeker's Hearthstone
-        265100, -- Corewarden's Hearthstone
-        142298, -- Astonishingly Scarlet Slippers
-    }
-    local SHAMAN_ASTRAL_RECALL = 556
-    local DALARAN_HS = 253629
-    local DALARAN_HS_FALLBACK = 140192
-    local HOUSING_ICON = MEDIA_PATH .. "icons\\housing-teleport.tga"
-
-    -- Get the correct icon for a toy (not the base "learn" item icon)
-    local function ToyIcon(id)
-        if C_ToyBox and C_ToyBox.GetToyInfo then
-            local _, _, icon = C_ToyBox.GetToyInfo(id)
-            if icon then return icon end
-        end
-        return C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(id) or 134414
-    end
-
-    -- M+/raid/PvP instance check -- guards against tainted execution
-    local function InProtectedInstance()
-        local _, instanceType = IsInInstance()
-        if instanceType == "raid" and InCombatLockdown() then return true end
-        if instanceType == "party" and C_ChallengeMode
-            and C_ChallengeMode.IsChallengeModeActive
-            and C_ChallengeMode.IsChallengeModeActive() then
-            return true
-        end
-        if (instanceType == "pvp" or instanceType == "arena") and InCombatLockdown() then return true end
-        return false
-    end
-    EllesmereUI.InProtectedInstance = InProtectedInstance
-
-    -- Check if a toy/item hearthstone is on cooldown.
-    -- Skips in M+/raid combat to avoid secret value errors.
-    local function IsHearthOnCD(id)
-        if InProtectedInstance() then return true end
-        if C_Container and C_Container.GetItemCooldown then
-            local ok, start, dur = pcall(C_Container.GetItemCooldown, id)
-            if ok and start and dur and dur > 1.5 then return true end
-        end
-        return false
-    end
-
-    -- Resolve slot 1: For Shamans with Astral Recall known:
-    --   In M+/raid combat -> always Astral Recall (no CD checks, no secret values)
-    --   If any owned toy is on CD -> Astral Recall (shorter CD)
-    --   Otherwise -> random owned toy (variety)
-    -- For non-Shamans: random owned toy HS, fallback to item 6948
-    function EllesmereUI.ResolveHearthSlot()
-        local _, cls = UnitClass("player")
-        local isShaman = cls == "SHAMAN" and IsPlayerSpell(SHAMAN_ASTRAL_RECALL)
-
-        -- In protected instances, Shamans always get Astral Recall (no CD queries)
-        if isShaman and InProtectedInstance() then
-            local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(SHAMAN_ASTRAL_RECALL)
-            return "spell", SHAMAN_ASTRAL_RECALL, info and info.iconID or 136010
-        end
-
-        -- Collect owned hearthstone toys (6948 is always in bags, not a toy)
-        local owned = {}
-        for _, id in ipairs(HEARTH_TOYS) do
-            local hasToy = PlayerHasToy and PlayerHasToy(id)
-            if hasToy then
-                owned[#owned + 1] = id
-            end
-        end
-
-        -- Shaman: show Astral Recall if any owned toy is on CD
-        if isShaman and #owned > 0 then
-            local anyOnCD = false
-            for _, id in ipairs(owned) do
-                if IsHearthOnCD(id) then anyOnCD = true; break end
-            end
-            if anyOnCD then
-                local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(SHAMAN_ASTRAL_RECALL)
-                return "spell", SHAMAN_ASTRAL_RECALL, info and info.iconID or 136010
-            end
-        end
-
-        -- Random owned toy, or fallback to base hearthstone (item 6948)
-        if #owned == 0 then
-            local icon = C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(6948) or 134414
-            return "item", 6948, icon
-        end
-        local pick = owned[math.random(#owned)]
-        return "item", pick, ToyIcon(pick)
-    end
-
-    -- Resolve slot 2: Dalaran HS 253629 > fallback 140192
-    function EllesmereUI.ResolveDalaranSlot()
-        local hasPrimary = PlayerHasToy and PlayerHasToy(DALARAN_HS)
-        local id = hasPrimary and DALARAN_HS or DALARAN_HS_FALLBACK
-        return "item", id, ToyIcon(id)
-    end
-
-    -- Resolve slot 3: Housing dashboard (click handler, not a spell)
-    function EllesmereUI.ResolveHousingSlot()
-        return "housing", 0, HOUSING_ICON
-    end
-end
 
 -- Safe scroll range helper (avoids tainted secret number values)
 function EllesmereUI.SafeScrollRange(sf)
@@ -10200,7 +10013,7 @@ function EllesmereUI:RegisterModule(folderName, config)
         EllesmereUIRaidFrames = true,
         EllesmereUIResourceBars = true,
         EllesmereUIUnitFrames = true,
-        EllesmereUIMythicTimer = true,
+
         -- v6.6 split
         EllesmereUIQoL = true,
         EllesmereUIBlizzardSkin = true,
@@ -11291,9 +11104,7 @@ EllesmereUI._RunConflictCheck = function()
             { addon = "SkironCooldownManager",    label = "Skiron Cooldown Manager",    targets = { "EllesmereUICooldownManager" } },
             { addon = "ArcUI",                    label = "ArcUI",                      targets = { "EllesmereUICooldownManager", } },
             { addon = "Ayije_CDM",                label = "Ayije CDM",                  targets = { "EllesmereUICooldownManager", "EllesmereUIResourceBars" } },
-            { addon = "MythicPlusTimer",          label = "Mythic Plus Timer",          targets = { "EllesmereUIMythicTimer" } },
-            { addon = "WarpDeplete",              label = "WarpDeplete",                targets = { "EllesmereUIMythicTimer" } },
-            { addon = "MPlusTimer",               label = "MPlusTimer",                 targets = { "EllesmereUIMythicTimer" } },
+
             { addon = "ChonkyCharacterSheet",     label = "Chonky Character Sheet",     targets = { "EllesmereUIBlizzardSkin" },
               moduleCheck = function() return BlizzardSkinSubEnabled("themedCharacterSheet") end,
               message = "Chonky Character Sheet conflicts with the EllesmereUI's Character Sheet. Disable either Chonky or the Character Sheet skin in Blizzard UI Enhanced settings." },
@@ -12611,24 +12422,18 @@ EllesmereUI.VIS_VALUES = {
 }
 EllesmereUI.VIS_ORDER = { "never", "always", "mouseover", "in_combat", "out_of_combat", "---", "in_raid", "in_party", "solo" }
 
--- Action Bars variant: adds "When Dragonriding". The secure action bars
--- (1-8, stance, pet) express it as [advflyable,flying] in their state
--- driver, which re-evaluates the flying transition in real time. Lua-side
--- modules catch the same transition via the gliding edge events registered
--- in EllesmereUI_Visibility.lua (gated on EllesmereUI._hasGlidingEvent).
+-- Action Bars variant
 EllesmereUI.VIS_VALUES_AB = {
     never      = "Never",
     always     = "Always",
     mouseover  = "Mouseover",
     in_combat      = "In Combat",
     out_of_combat  = "Out of Combat",
-    show_dragonriding = "When Dragonriding",
-    show_not_dragonriding = "When Not Dragonriding",
     in_raid        = "In Raid Group",
     in_party   = "In Party",
     solo       = "Solo",
 }
-EllesmereUI.VIS_ORDER_AB = { "never", "always", "mouseover", "in_combat", "out_of_combat", "show_dragonriding", "show_not_dragonriding", "---", "in_raid", "in_party", "solo" }
+EllesmereUI.VIS_ORDER_AB = { "never", "always", "mouseover", "in_combat", "out_of_combat", "---", "in_raid", "in_party", "solo" }
 
 -- CDM variant (no mouseover -- CDM bars don't support mouseover visibility)
 EllesmereUI.VIS_VALUES_CDM = {
@@ -12643,14 +12448,8 @@ EllesmereUI.VIS_VALUES_CDM = {
 EllesmereUI.VIS_ORDER_CDM = { "never", "always", "in_combat", "out_of_combat", "---", "in_raid", "in_party", "solo" }
 
 -- Checkbox dropdown 2: Visibility Options (keys match DB fields)
--- NOTE: VIS_OPT_ITEMS_RESOURCE_BARS below is a load-time COPY of this list
--- (plus its own extra entries). Items added here appear there automatically,
--- but only because the copy loop runs after this table -- keep the copy loop
--- directly below, and update its visHideMounted insert anchor if that key is
--- ever renamed.
 EllesmereUI.VIS_OPT_ITEMS = {
     { key = "visOnlyInstances",    label = "Only Show in Instances" },
-    { key = "visHideHousing",      label = "Hide in Housing" },
     { key = "visHideMounted",      label = "Hide when Mounted" },
     { key = "visHideNoTarget",     label = "Hide without Target",
       tooltip = "*Blizzard's auto targeting (soft target) setting can cause brief flickering when your actual target dies but a soft-target is still active." },
@@ -12658,17 +12457,10 @@ EllesmereUI.VIS_OPT_ITEMS = {
       tooltip = "This bar will only show if you have an enemy targeted" },
 }
 
--- Resource Bars variant: same items plus skyriding (kept out of the global
--- list so other modules don't grow an option their code never evaluates).
+-- Resource Bars variant
 EllesmereUI.VIS_OPT_ITEMS_RESOURCE_BARS = {}
 for _, item in ipairs(EllesmereUI.VIS_OPT_ITEMS) do
     EllesmereUI.VIS_OPT_ITEMS_RESOURCE_BARS[#EllesmereUI.VIS_OPT_ITEMS_RESOURCE_BARS + 1] = item
-    if item.key == "visHideMounted" then
-        EllesmereUI.VIS_OPT_ITEMS_RESOURCE_BARS[#EllesmereUI.VIS_OPT_ITEMS_RESOURCE_BARS + 1] = {
-            key = "visHideDragonriding", label = "Hide when Dragonriding",
-            tooltip = "Hides this element while you are on a skyriding (glide-capable) mount, where Blizzard shows its vigor HUD.",
-        }
-    end
 end
 
 -- Cache player class once at load time (never changes).
@@ -12720,15 +12512,6 @@ function EllesmereUI.IsPlayerMountedLike()
     return false
 end
 
-function EllesmereUI.IsPlayerSkyriding()
-    if not (EllesmereUI.IsPlayerMountedLike and EllesmereUI.IsPlayerMountedLike()) then return false end
-    if C_PlayerInfo and C_PlayerInfo.GetGlidingInfo then
-        local _, canGlide = C_PlayerInfo.GetGlidingInfo()
-        return canGlide == true
-    end
-    return false
-end
-
 -- Non-macro visibility subset: the options that CAN'T be expressed in a
 -- secure [macro] condition and must be evaluated in Lua. Used by secure
 -- action bar frames that delegate the macro-expressible options
@@ -12752,20 +12535,9 @@ function EllesmereUI.CheckVisibilityOptionsNonMacro(opts)
         if not inInstance then return true end
     end
 
-    -- Hide in Housing
-    if opts.visHideHousing then
-        if C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot() then
-            return true
-        end
-    end
-
     -- Hide when Mounted (includes druid travel/flight/aquatic forms)
     if opts.visHideMounted then
         if EllesmereUI.IsPlayerMountedLike and EllesmereUI.IsPlayerMountedLike() then return true end
-    end
-
-    if opts.visHideDragonriding then
-        if EllesmereUI.IsPlayerSkyriding and EllesmereUI.IsPlayerSkyriding() then return true end
     end
 
     return false
@@ -12774,7 +12546,7 @@ end
 function EllesmereUI.CheckVisibilityOptions(opts)
     if not opts then return false end
 
-    -- Instances / housing / mounted (shared with secure-frame fast path).
+    -- Instances / mounted (shared with secure-frame fast path).
     if EllesmereUI.CheckVisibilityOptionsNonMacro(opts) then return true end
 
     -- Hide without Target
@@ -12802,18 +12574,6 @@ function EllesmereUI.CheckVisibilityMode(mode, state)
     if mode == "in_raid" then return state.inRaid end
     if mode == "in_party" then return state.inParty end
     if mode == "solo" then return not state.inRaid and not state.inParty end
-    if mode == "show_dragonriding" then
-        -- Approximates the secure-macro [advflyable,flying] driver: show only
-        -- while airborne on a glide-capable (skyriding) mount. The shared
-        -- predicate lives in EllesmereUI_Visibility.lua and is also used by
-        -- the multi-select visibility engine.
-        return (EllesmereUI.IsAirborneSkyriding and EllesmereUI.IsAirborneSkyriding()) or false
-    end
-    if mode == "show_not_dragonriding" then
-        -- Exact inverse of show_dragonriding: show whenever NOT airborne on
-        -- a glide-capable (skyriding) mount.
-        return not (EllesmereUI.IsAirborneSkyriding and EllesmereUI.IsAirborneSkyriding())
-    end
     -- "always" and "mouseover" both return true (mouseover handled separately)
     return true
 end

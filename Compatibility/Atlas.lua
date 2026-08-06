@@ -4,7 +4,7 @@ _G.EUI_AtlasMap = {
     ["shop-card-wide-frame-default"] = "Interface\\DialogFrame\\UI-DialogBox-Background",
     ["shop-card-wide-frame-hover"] = "Interface\\DialogFrame\\UI-DialogBox-Background",
     ["lootroll-animreveal-a"] = "Interface\\TargetingFrame\\UI-StatusBar",
-    ["UI-Journeys-Delve-Companion-Ring"] = "Interface\\Minimap\\MiniMap-TrackingBorder",
+
     ["Ui-Dialog-New-Background"] = "Interface\\DialogFrame\\UI-DialogBox-Background",
     ["UI-QuestTrackerButton-Secondary-Collapse"] = "Interface\\Buttons\\UI-MinusButton-Up",
     ["UI-QuestTrackerButton-Secondary-Expand"] = "Interface\\Buttons\\UI-PlusButton-Up",

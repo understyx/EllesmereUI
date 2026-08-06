@@ -25,7 +25,6 @@ local IC_RECIPE        = IC.Recipe           -- 9
 local IC_QUEST         = IC.Questitem        -- 12
 local IC_MISC          = IC.Miscellaneous    -- 15
 local IC_PROFESSION    = 19                  -- Enum.ItemClass.Profession (Midnight)
-local IC_HOUSING       = 20                  -- Enum.ItemClass.Housing (Midnight)
 
 -- Hardcoded category definitions. Order here is the default order.
 -- types = list of Enum.ItemClass numeric IDs to match
@@ -44,7 +43,6 @@ local DEFAULT_CATEGORIES = {
     { name = "Trade Goods",        types = { IC_TRADESKILL, IC_REAGENT },    icon = "Interface\\Icons\\INV_Ingot_03" },
     { name = "Gear Enhancements",  types = { IC_GEM, IC_ITEM_ENHANCE },     icon = "Interface\\Icons\\INV_Enchant_EssenceCosmicGreater" },
     { name = "Professions",        types = { IC_PROFESSION, IC_RECIPE },     icon = "Interface\\Icons\\Trade_Engineering" },
-    { name = "Housing",            types = { IC_HOUSING },                   icon = "Interface\\Icons\\INV_Misc_Key_03" },
     { name = "Miscellaneous",      types = { IC_MISC, IC_CONTAINER }, isCatchAll = true, icon = "Interface\\Icons\\INV_Misc_Bag_10" },
 }
 

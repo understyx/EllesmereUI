@@ -111,23 +111,7 @@ visFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 visFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 visFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
 visFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
--- Dragonriding edges: mount-capability changes fire PLAYER_CAN_GLIDE_CHANGED
--- (repo-proven event); takeoff/landing while staying mounted fires
--- PLAYER_IS_GLIDING_CHANGED, which is probed because nothing registered it
--- before this feature. When the probe fails on a client, the dragonriding
--- checklist items lock (EUI._hasGlidingEvent) instead of evaluating with
--- stale edges.
-visFrame:RegisterEvent("PLAYER_CAN_GLIDE_CHANGED")
-do
-    local ok
-    if C_EventUtils and C_EventUtils.IsEventValid then
-        ok = C_EventUtils.IsEventValid("PLAYER_IS_GLIDING_CHANGED") and true or false
-        if ok then visFrame:RegisterEvent("PLAYER_IS_GLIDING_CHANGED") end
-    else
-        ok = pcall(visFrame.RegisterEvent, visFrame, "PLAYER_IS_GLIDING_CHANGED") and true or false
-    end
-    EUI._hasGlidingEvent = ok
-end
+
 
 visFrame:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_REGEN_DISABLED" then
@@ -213,7 +197,6 @@ _G._EBS_UpdateVisEventRegistration = function() end
 --  Combination semantics: OR within an axis, AND across axes.
 --    combat axis:  in_combat / out_of_combat
 --    group axis:   in_raid / in_party / solo
---    dragon axis:  show_dragonriding / show_not_dragonriding
 --  An axis with none (or all) of its items checked imposes no constraint.
 --  Never / Always are exclusive single selections and never appear in a set.
 --  Mouseover combines as one more AND gate (hover-gated conditions): the
@@ -227,7 +210,6 @@ _G._EBS_UpdateVisEventRegistration = function() end
 EUI.VIS_AXES = {
     combat = { "in_combat", "out_of_combat" },
     group  = { "in_raid", "in_party", "solo" },
-    dragon = { "show_dragonriding", "show_not_dragonriding" },
 }
 
 -- Shared caps table for Action Bars, CDM, Unit Frames, and Resource Bars.
@@ -244,31 +226,16 @@ EUI.VIS_CAPS_NO_GROUP = { partyIncludesRaid = false, noGroupModes = true }
 -- existing scalar reader see a sane, user-recognizable value.
 local VIS_REPRESENTATIVE_ORDER = {
     "in_combat", "out_of_combat", "in_raid", "in_party", "solo",
-    "show_dragonriding", "show_not_dragonriding",
 }
 local VIS_CONDITION_KEYS = {}
 for _, k in ipairs(VIS_REPRESENTATIVE_ORDER) do VIS_CONDITION_KEYS[k] = true end
 EUI.VIS_CONDITION_KEYS = VIS_CONDITION_KEYS
 
--- Keys allowed inside a visibilityModes set: the seven conditions plus
+-- Keys allowed inside a visibilityModes set: conditions plus
 -- mouseover (the hover-gate). Never/Always stay exclusive scalars.
 local VIS_COMBINABLE_KEYS = { mouseover = true }
 for _, k in ipairs(VIS_REPRESENTATIVE_ORDER) do VIS_COMBINABLE_KEYS[k] = true end
 EUI.VIS_COMBINABLE_KEYS = VIS_COMBINABLE_KEYS
-
--- Airborne skyriding predicate shared by CheckVisibilityMode's dragonriding
--- branches and the multi-select engine. Approximates the secure driver's
--- [advflyable,flying]; the additional IsMounted() requirement is a
--- deliberate, documented drift (Druid Flight Form matches the secure driver
--- but not this predicate).
-function EUI.IsAirborneSkyriding()
-    if not (IsMounted and IsMounted() and IsFlying and IsFlying()) then return false end
-    if C_PlayerInfo and C_PlayerInfo.GetGlidingInfo then
-        local _, canGlide = C_PlayerInfo.GetGlidingInfo()
-        return canGlide == true
-    end
-    return true
-end
 
 local function VisRepresentative(modes)
     -- A hover-gated set is represented by "mouseover": downgrades keep the
@@ -406,15 +373,6 @@ function EUI.EvalVisibilityModes(selection, state, caps)
         if not pass and g3 and not state.inRaid and not state.inParty then pass = true end
         if not pass then return false end
     end
-
-    -- Dragonriding axis
-    local d1, d2 = selection.show_dragonriding, selection.show_not_dragonriding
-    if (d1 or d2) and not (d1 and d2) then
-        local dr = EUI.IsAirborneSkyriding()
-        if d1 and not dr then return false end
-        if d2 and dr then return false end
-    end
-
     return true
 end
 
@@ -434,12 +392,6 @@ function EUI.EvalVisibilityExtended(store, legacyKey, state, caps)
     if not store then return nil end
     local vm = ActiveModes(store, legacyKey)
     if not vm then
-        local scalar = store[legacyKey]
-        if scalar == "show_dragonriding" then
-            return EUI.IsAirborneSkyriding()
-        elseif scalar == "show_not_dragonriding" then
-            return not EUI.IsAirborneSkyriding()
-        end
         return nil
     end
     if not state then
@@ -498,26 +450,18 @@ end
 -------------------------------------------------------------------------------
 
 -- Returns the AND-term string shared by every bracket group (with trailing
--- comma, or "") plus the leading unconditional hide gate used for a lone
--- negated dragon axis ("" when unused; the same technique the callers'
--- hide-prefix gates already use -- no negated-flying tokens needed).
+-- comma, or "").
 -- Non-axis keys (mouseover) are ignored. OR within an axis, AND across
 -- axes; a saturated or empty axis contributes nothing.
 function EUI.BuildVisModeConjuncts(vm)
-    local conj, negGate = "", ""
-    local d1, d2 = vm.show_dragonriding, vm.show_not_dragonriding
-    if d1 and not d2 then
-        conj = conj .. "advflyable,flying,"
-    elseif d2 and not d1 then
-        negGate = "[advflyable,flying] hide; "
-    end
+    local conj = ""
     local c1, c2 = vm.in_combat, vm.out_of_combat
     if c1 and not c2 then
         conj = conj .. "combat,"
     elseif c2 and not c1 then
         conj = conj .. "nocombat,"
     end
-    return conj, negGate
+    return conj
 end
 
 -- Compiles the driver tail appended after `prefix` (caller-supplied leading
@@ -527,8 +471,7 @@ end
 -- checking In Party alone does not also show in a raid group; In Raid
 -- Group must be checked separately for that.
 function EUI.BuildVisibilityDriverString(prefix, vm)
-    local conj, negGate = EUI.BuildVisModeConjuncts(vm)
-    prefix = prefix .. negGate
+    local conj = EUI.BuildVisModeConjuncts(vm)
 
     local g1, g2, g3 = vm.in_raid, vm.in_party, vm.solo
     if (g1 or g2 or g3) and not (g1 and g2 and g3) then
@@ -549,8 +492,7 @@ function EUI.BuildVisibilityDriverString(prefix, vm)
     end
 
     if conj == "" then
-        -- All axes saturated/empty: Always-equivalent (negGate, when
-        -- present, still hides while dragonriding).
+        -- All axes saturated/empty: Always-equivalent.
         return prefix .. "show"
     end
     return prefix .. "[" .. conj:sub(1, -2) .. "] show; hide"

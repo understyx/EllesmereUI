@@ -623,11 +623,9 @@ EllesmereUI._ELEMENT_SETTINGS_MAP = {
     ["EUI_BattleRes"]      = { module = "EllesmereUIQoL",             page = "Quality of Life",   sectionName = "BATTLE RES",        highlightText = "Enable BattleRes Icon" },
     ["EUI_Bloodlust"]      = { module = "EllesmereUIQoL",             page = "Quality of Life",   sectionName = "BLOODLUST TRACKER", highlightText = "Enable Bloodlust Icon" },
 
-    -- Mythic+ Timer
-    ["EMT_MythicTimer"]    = { module = "EllesmereUIMythicTimer",     page = "Mythic+ Timer",     sectionName = "DISPLAY",           highlightText = "Scale" },
 
-    -- Dragon Riding HUD (Blizz UI Enhanced > Dragon Riding page)
-    ["EDR_Cluster"]        = { module = "EllesmereUIBlizzardSkin",    page = "Dragon Riding",     sectionName = "GENERAL",           highlightText = "Enable Dragon Riding Bar" },
+
+
 
     -- Minimap
     ["EBS_Minimap"]        = { module = "EllesmereUIMinimap",         page = "Minimap",           sectionName = "DISPLAY",           highlightText = "Size" },
@@ -10416,10 +10414,7 @@ local function DoClose(closeAction)
         _G.EllesmereUIQuestTracker.UpdateVisibility()
     end
 
-    -- Re-check Dragon Riding's real visibility (it force-shows while unlocked
-    -- so it can be edited off-mount; without this it stays stuck visible
-    -- after exiting Unlock Mode if the player dismounted while unlocked).
-    if _G._EDR_UpdateVisibility then pcall(_G._EDR_UpdateVisibility) end
+
 
     if not unlockFrame then return end
 
@@ -11849,12 +11844,6 @@ local function SuspendForCombat()
     EllesmereUI._unlockActive = false
     EllesmereUI._unlockModeActive = false
 
-    -- Re-check Dragon Riding's real visibility (it force-shows while
-    -- _unlockActive is true so it can be edited off-mount; must run AFTER
-    -- _unlockActive is cleared above, or UpdateVisibility() still hits that
-    -- force-show branch and this call is a no-op).
-    if _G._EDR_UpdateVisibility then pcall(_G._EDR_UpdateVisibility) end
-
     if unlockFrame then
         unlockFrame:SetScript("OnUpdate", nil)
         unlockFrame:Hide()
@@ -11889,14 +11878,6 @@ local function ResumeAfterCombat()
     EllesmereUI._unlockActive = true
     EllesmereUI._unlockModeActive = true
     if EllesmereUI._RefreshFallbackGhosts then EllesmereUI._RefreshFallbackGhosts() end
-
-    -- Re-check Dragon Riding's visibility now that _unlockActive is true
-    -- again: SuspendForCombat's re-check hid the HUD for a dismounted
-    -- player, and without this mirror call the force-show branch never
-    -- re-evaluates on resume -- the element would stay invisible (and
-    -- uneditable) for the rest of the unlock session until a mount or
-    -- dismount happened to re-run UpdateVisibility.
-    if _G._EDR_UpdateVisibility then pcall(_G._EDR_UpdateVisibility) end
 
     -- Re-hide objective tracker
     local objTracker = _G.ObjectiveTrackerFrame
