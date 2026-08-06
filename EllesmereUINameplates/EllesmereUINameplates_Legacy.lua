@@ -167,13 +167,28 @@ end
 local function ApplyReactionColor(state, r, g, b)
     if state.applyingColor then return end
     local db, color = DB()
-    state.isFriendly = (r < .3 and g > .7 and b < .35)
-        or (r < .35 and g < .55 and b > .7)
-    if r > .85 and g < .25 and b < .25 then
+    -- Classify by Blizzard's unambiguous native signals.  Invert to detect
+    -- friendly: anything that is NOT clearly hostile / neutral / tapped must
+    -- be a friendly unit (player class color or friendly-NPC green).  This
+    -- avoids trying to enumerate every warm-toned class color, which is
+    -- impossible without a unit token on 3.3.5.
+    local isHostile = r > .85 and g < .25 and b < .25
+    local isNeutral = r > .75 and g > .65 and b < .35
+    local isTapped  = abs(r - g) < .08 and abs(g - b) < .08 and r < .7
+    state.isFriendly = not isHostile and not isNeutral and not isTapped
+    -- Blizzard signals friendly NPCs with pure green (0, 1, 0).  Any other
+    -- friendly color is a player class color, so we can now positively
+    -- identify friendly players without a unit token.
+    if state.isFriendly then
+        state.isFriendlyPlayer = not (r < .05 and g > .95 and b < .05)
+    else
+        state.isFriendlyPlayer = false
+    end
+    if isHostile then
         color = db.hostile or ns.defaults.hostile
-    elseif r > .75 and g > .65 and b < .35 then
+    elseif isNeutral then
         color = db.neutral or ns.defaults.neutral
-    elseif abs(r - g) < .08 and abs(g - b) < .08 then
+    elseif isTapped then
         color = db.tapped or ns.defaults.tapped
     end
     if color then r, g, b = color.r, color.g, color.b end
@@ -181,12 +196,6 @@ local function ApplyReactionColor(state, r, g, b)
     state.health:SetStatusBarColor(r, g, b)
     state.applyingColor = false
     if state.name then state.name:SetTextColor(r, g, b) end
-    -- `friendlyNameOnly` is a friendly-player option.  Legacy nameplates have
-    -- no unit token, so reaction color alone cannot distinguish a friendly
-    -- player from a friendly/attackable NPC (training dummies are a common
-    -- example).  Hiding by color made valid NPC health bars appear to be
-    -- missing.  Keep the bar visible unless this backend can positively
-    -- identify the plate as a player in the future.
     local nameOnly = state.isFriendlyPlayer == true and db.friendlyNameOnly ~= false
     state.health:SetAlpha(nameOnly and 0 or 1)
     if state.cast then state.cast:SetAlpha(nameOnly and 0 or 1) end
@@ -336,9 +345,24 @@ local function Skin(frame)
         end
     end)
     frame:HookScript("OnShow", function()
+        -- If the SetStatusBarColor Lua hook has not fired for this plate show
+        -- (Blizzard used a C-level colour update that bypassed Lua), nativeR/G/B
+        -- is stale from the previous unit.  Read GetStatusBarColor() now: the
+        -- C engine always sets the bar colour before firing OnShow on the parent
+        -- frame, so this is authoritative for the current unit.
+        if not state.nativeR then
+            local r, g, b = state.health:GetStatusBarColor()
+            state.nativeR, state.nativeG, state.nativeB = r, g, b
+        end
         RefreshAppearance(state)
         RefreshValues(state)
     end)
+    frame:HookScript("OnHide", function()
+        -- Clear the cached native colour so it cannot leak into the next unit
+        -- that reuses this plate frame.  The next OnShow will re-read it fresh.
+        state.nativeR, state.nativeG, state.nativeB = nil, nil, nil
+    end)
+
     RefreshAppearance(state)
     RefreshValues(state)
 end
